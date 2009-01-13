@@ -1,0 +1,117 @@
+Skirmish
+========
+Aur Saraf <sonoflilit@gmail.com>
+
+:as: Aur Saraf <mailto:sonoflilit@gmail.com[]>
+
+A real-time tactical game of medieval war by Aur Saraf.
+
+
+High Level Design
+~~~~~~~~~~~~~~~~~
+
+- A skirmish server is set up to listen for connections
+- A skirmish client connects to the server
+- A game-selection protocol is played out (at this stage, it is a
+  one-step protocol consisting of the client requesting a new game and
+  the server accepting the request)
+- A game is played:
+ * The server informs the client of the game map
+ * The client informs the server of initial game configuration,
+   consisting of source code for unit AI procedures (with parameters)
+   that the client wishes to be assignable to units during the game,
+   initial unit placement on the map and initial AI configuration
+ * The server informs the client that the game has started
+ * Periodically, the server sends the client a status report including
+   unit location and direction
+ * The client may send the server method calls on unit AI modules and
+   new AI assignments for units
+
+Client-Server Protocol
+~~~~~~~~~~~~~~~~~~~~~~
+
+'[...]' means that a lot of time may pass between the former and
+current stages.
+
+Lines starting with '#' are followed by an ACK from the other party.
+
+At all times, the client must send a message at least once every
+PING_PERIOD. A ping message exists that the server immediately answers
+with a pong message for times of low communication volumes.
+
+- A client connects to the server via UDP
+- Initial handshake (client sends protocol version, identifier; server
+  disconnects with message or accepts)
+- Client may do one of:
+ * [...] Request new game (no parameters; server refuses with message or
+   accepts)
+ * If accepted:
+  - # Server sends game map and a list of player identifiers, how many
+    units they have and the area where they may place them
+  - [...] # Client sends unit placement, source code for unit AI that it
+    may wish to assign during the game and initial assignment of AI
+    module and parameters to each unit
+  - [...] # Server sends "game started" message
+   * Once every UPDATE_PERIOD, server sends list of units seen and
+     their velocity vectors and list of special events seen:
+    - Hits
+    - Misses
+    - Units dying
+   * Client may send lists of method calls on unit AI modules and new
+     assignments of AI module and parameters to units
+
+Server
+~~~~~~
+
+Written in Erlang, supports one game for one player but built with
+extensibility in mind.
+
+Client
+~~~~~~
+
+Written in Ruby with Cairo graphics and matrix.rb math.
+
+Future
+~~~~~~
+
+- Types of unit: Short-sworders, Pikemen, Cavalry, Archery, Commander
+- Fog of war (initially tactical - circle from commander, eventually
+  strategic - units tell their tales of faraway events upon seeing commander)
+- Messenger units that distribute new AI assignments
+- Multiplayer games
+- Custom HUD: AI code may send messages to message processing code on
+  the server (default implementation passes everything through) that
+  can send a blob of up to a certain size to the client with every
+  update, used by the client to generate custom HUD info
+
+License
+-------
+
+Copyright (c) 2009, Aur Saraf
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are
+met:
+
+- Redistributions of source code must retain the above copyright
+notice, this list of conditions and the following disclaimer.
+- Redistributions in binary form must reproduce the above copyright
+notice, this list of conditions and the following disclaimer in the
+documentation and/or other materials provided with the distribution.
+- Neither the name of the Metagovernment project nor the names of its
+contributors may be used to endorse or promote products derived from
+this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+login or register to post comments

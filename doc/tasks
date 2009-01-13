@@ -1,0 +1,3 @@
+Story 0
+Client connects to server, sends identifier, server accepts iff same protocol version
+Estimated 3h
