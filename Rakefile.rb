@@ -6,6 +6,8 @@ require 'rake/rdoctask'
 # === Project map
 # * skirmish
 #  * client
+#   * bin
+#    * skirmish-client
 #   * src
 #    * *.rb
 #  * server
@@ -19,6 +21,10 @@ require 'rake/rdoctask'
 #    * design
 #     * *.txt
 
+skirmish_client = 'client/bin/skirmish-client'
+client_tests = FileList['client/test/test_*.rb']
+tests = FileList['test/test_*.rb']
+
 desc "Compile and run tests"
 task :default => [:build, :test]
 
@@ -26,11 +32,32 @@ desc "Compile, run tests and build documentation"
 task :all => [:build, :test, :doc]
 
 desc "Compile everything"
-task :build
+task :build => [:build_client]
 
-tests = FileList['test/test_*.rb']
+desc "Build client"
+task :build_client => [skirmish_client]
+
+file skirmish_client => ['client/src/skirmish-client.rb'] do |t|
+  cp t.prerequisites[0], t.name
+  chmod 0755, t.name
+end
+CLOBBER << skirmish_client
+
+desc "Run client tests"
+Rake::TestTask.new :test_client => [:build_client] do |t|
+  t.libs << 'client/test'
+  t.test_files = client_tests
+  t.warning = true
+end
+
+desc "Build server"
+task :build_server
+
+desc "Run server tests"
+task :test_server => [:build_server]
+
 desc "Run tests"
-Rake::TestTask.new :test do |t|
+Rake::TestTask.new :test => [:test_client, :test_server] do |t|
   t.libs << 'test'
   t.test_files = tests
   t.warning = true
@@ -50,7 +77,7 @@ end
 rule '.html' => [design_doc_src] do |t|
   sh "asciidoc -o #{t.name} #{t.source}"
 end
-CLOBBER << Dir.glob('doc/design/*.html')
+CLOBBER << Dir['doc/design/*.html']
 
 Rake::RDocTask.new :automation_docs do |rd|
   rd.rdoc_dir = 'doc/automation'
