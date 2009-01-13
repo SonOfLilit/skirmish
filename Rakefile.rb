@@ -1,4 +1,5 @@
 require 'rake'
+require 'rake/clean'
 require 'rake/testtask'
 require 'rake/rdoctask'
 
@@ -49,6 +50,7 @@ end
 rule '.html' => [design_doc_src] do |t|
   sh "asciidoc -o #{t.name} #{t.source}"
 end
+CLOBBER << Dir.glob('doc/design/*.html')
 
 Rake::RDocTask.new :automation_docs do |rd|
   rd.rdoc_dir = 'doc/automation'
