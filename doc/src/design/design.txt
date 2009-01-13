@@ -20,6 +20,32 @@ The process for developing a feature is:
  .. Code is written until unit test passes
 . stories.txt is updated with real time taken
 
+Acceptance tests are system-level tests (i.e. they never use
+unofficial ways to interact with the System Under Test and they never
+fake parts of the system) that define what the feature being "done"
+means. Acceptance tests should cover at least
+
+* *All* the different acceptable use cases of the feature
+* *All* the boundary conditions of the feature definition from within
+  (i.e. if the maximum allowed id is 16 characters, try using a 16
+  character id)
+* Some failure cases (i.e. test that the system gives an error message
+  for a 17 character id) - although these are in general trusted to
+  the unit tests, this is to catch insufficient unit testing of a
+  feature, so e.g. if the first time all acceptable-use and
+  boundary-case acceptance tests of a feature pass, a failure-case
+  fails - this indicates code-smell and you should review the
+  feature's unit tests and probably add many (but always at least one
+  for the unhandled failure-case that the acceptance tests caught)
+
+Unit tests run a unit of code (e.g. class) in isolation, faking
+aspects of the external environment the code expects with mocks. They
+should completely specify the behaviour of a unit of code. That means:
+
+* *All* acceptable use cases
+* *All* boundary conditions, from within and from without
+* *All* illegal inputs, states, etc' that the code is expected to handle
+
 High Level Design
 -----------------
 
