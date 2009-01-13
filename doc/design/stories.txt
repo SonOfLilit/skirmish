@@ -1,3 +1,6 @@
-Story 0
+Story 0: Connection
 Client connects to server, sends identifier, server accepts iff same protocol version
+Assigned aur.saraf
 Estimated 3h
+Begun 09:40
+Real xh

@@ -1,0 +1,67 @@
+Client-Server Network Protocol Specification
+============================================
+
+Design Considerations
+---------------------
+
+- Simplicity
+- Readability by human beings where speed doesn't matter
+- Speed where it matters
+- No consideration given to security
+
+Therefore, the protocol between games will be plaintext and the
+protocol within games will be binary.
+
+Responses
+---------
+
+In general, "ok\n" is an ACK - it is sent to signify that a message
+was received and everything is OK; "fatal <string>" reports an error
+that requires the server to disconnect the client, and is followed by
+disconnecting. The string may be up to 1KiB long and may contain any
+character.
+
+
+Handshake
+---------
+
+Client sends
+
+---------
+version <int>\n
+---------
+
+Server answers
+
+---------
+ok\n
+---------
+
+or
+
+---------
+fatal <string>
+<disconnects>
+---------
+
+Client sends
+
+---------
+id <id_string>\n
+secret <secret_string>\n
+---------
+
+where <id_string> matches /[0-9a-zA-Z.]{3-16}/ and <secret string>
+matches /.{0-255}/ (with '.' not matching newline).
+
+Server may respond
+
+---------
+ok\n
+---------
+
+or, if the identifier is in use,
+
+---------
+fatal <string>
+---------

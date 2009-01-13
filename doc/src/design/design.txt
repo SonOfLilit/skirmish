@@ -4,11 +4,24 @@ Aur Saraf <sonoflilit@gmail.com>
 
 :as: Aur Saraf <mailto:sonoflilit@gmail.com[]>
 
-A real-time tactical game of medieval war by Aur Saraf.
+A programmable real-time tactical game of medieval war by Aur Saraf.
 
+Development Process
+-------------------
+
+The process for developing a feature is:
+
+. design.txt is updated to include feature
+. stories.txt is updated with feature description, estimation,
+  assignment
+. Acceptance Tests are written for feature
+. Loop until acceptance tests pass:
+ .. Unit test is written and seen to fail
+ .. Code is written until unit test passes
+. stories.txt is updated with real time taken
 
 High Level Design
-~~~~~~~~~~~~~~~~~
+-----------------
 
 - A skirmish server is set up to listen for connections
 - A skirmish client connects to the server
@@ -28,7 +41,7 @@ High Level Design
    new AI assignments for units
 
 Client-Server Protocol
-~~~~~~~~~~~~~~~~~~~~~~
+----------------------
 
 '[...]' means that a lot of time may pass between the former and
 current stages.
@@ -61,18 +74,18 @@ with a pong message for times of low communication volumes.
      assignments of AI module and parameters to units
 
 Server
-~~~~~~
+------
 
 Written in Erlang, supports one game for one player but built with
 extensibility in mind.
 
 Client
-~~~~~~
+------
 
 Written in Ruby with Cairo graphics and matrix.rb math.
 
 Future
-~~~~~~
+------
 
 - Types of unit: Short-sworders, Pikemen, Cavalry, Archery, Commander
 - Fog of war (initially tactical - circle from commander, eventually
