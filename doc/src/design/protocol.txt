@@ -51,8 +51,10 @@ id <id_string>\n
 secret <secret_string>\n
 ---------
 
-where <id_string> matches /[0-9a-zA-Z.]{3-16}/ and <secret string>
-matches /.{0-255}/ (with '.' not matching newline).
+// {num} has special meaning to AsciiDoc (so instead we write \{n})
+
+where <id_string> matches /[0-9a-zA-Z.]\{3-16}/ and <secret string>
+matches /.\{0-255}/ (with '.' not matching newline).
 
 Server may respond
 
