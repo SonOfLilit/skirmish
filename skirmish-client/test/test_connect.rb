@@ -87,18 +87,30 @@ class TestConnect < Test::Unit::TestCase
     local_error_on_connect_with 'aaa', random_string(1024)
   end
 
-  def wrong_protocol_version message
+  def test_server_unreachable # TODO
+  end
+  def test_wrong_port # TODO
+  end
+  def test_server_suddenly_dies # TODO
+  end
+
+  def ensure_server_fatal message, &block
     assert_raise ServerFatal do
       begin
         try_connect 'abcd', 'efgh' do
-          @server.expect "version #{Connection::PROTOCOL_VERSION}\n"
-          @server.send "fatal " + message
-          @server.close
+          block.call 'abcd', 'efgh'
         end
       rescue ServerFatal => e
         assert_match message, e.to_s
         raise e
       end
+    end
+  end
+  def wrong_protocol_version message
+    ensure_server_fatal message do |id, secret|
+      @server.expect "version #{Connection::PROTOCOL_VERSION}\n"
+      @server.send "fatal " + message
+      @server.close
     end
   end
   def test_wrong_protocol_version
@@ -112,5 +124,18 @@ class TestConnect < Test::Unit::TestCase
   # way - over-requiring - than just testing that nothing major breaks
   def test_wrong_protocol_version_too_long_message
     wrong_protocol_version random_string(4096)
+  end
+  def server_does_not_like_us message
+    ensure_server_fatal message do |id, secret|
+      @server.expect "version #{Connection::PROTOCOL_VERSION}\n"
+      @server.send "ok\n"
+      @server.expect "id #{id}\n"
+      @server.expect "secret #{secret}\n"
+      @server.send "fatal " + message
+      @server.close
+    end
+  end
+  def server_full
+    server_does_not_like_us "Server full."
   end
 end

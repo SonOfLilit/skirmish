@@ -20,8 +20,8 @@ module Skirmish
 
     BASE_DIR = '.'
     SERVER_PORT = 1657
-    SERVER_DIR = File.join(BASE_DIR, 'server')
-    CLIENT_DIR = File.join(BASE_DIR, 'client')
+    SERVER_DIR = File.join(BASE_DIR, 'skirmish-server')
+    CLIENT_DIR = File.join(BASE_DIR, 'skirmish-client')
 
     # Thrown when client reports fatal error from server
     class ServerFatal < Exception; end
@@ -57,7 +57,8 @@ module Skirmish
 
       yield if block
 
-      client.write("connect 'localhost', #{SERVER_PORT}, #{id.inspect}, #{secret.inspect}\n");
+      client.write("connect 'localhost', #{SERVER_PORT}, "
+                   "#{id.inspect}, #{secret.inspect}\n");
       response = client.readline
       raise ServerFatal if response =~ /server fatal/i
 
@@ -69,7 +70,7 @@ module Skirmish
       if @automation_client
         @automation_client = nil
       else
-        # TODO: google idiom for this
+        # TODO: google idiom for getting backtrace
         trace = nil
         begin
           raise Exception
@@ -94,8 +95,7 @@ module Skirmish
   #
   # The power of Test::Unit::TestCase and Skirmish::Automation combined!
   #
-  # TODO: optionally evaluate this class to enable using
-  # Skirmish::Automation for other things
+  # TODO: prevent Test::Unit invocation whenever Automation is used
   class SystemTest < Test::Unit::TestCase
     include Skirmish::Automation
 

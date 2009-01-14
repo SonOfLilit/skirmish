@@ -8,8 +8,7 @@ module Skirmish
 
   class Connection
 
-    # TODO: DRY here and in server
-    PROTOCOL_VERSION = 0
+    PROTOCOL_VERSION = 0 # TODO: DRY here and in server
     # in honor of my friends, FIRST Robotics Competition team #1657 HAMOSSAD
     DEFAULT_PORT = 1657
 
@@ -29,7 +28,6 @@ module Skirmish
     end
 
     def validate_id id
-      # TODO better message
       raise ArgumentError, "id too short" unless id.length >= 3
       raise ArgumentError, "id too long" unless id.length <= 16
       unless id =~ /^[0-9a-zA-Z.]*$/
@@ -38,7 +36,6 @@ module Skirmish
     end
 
     def validate_secret secret
-      # TODO better message
       unless secret.length <= 255 and secret["\n"].nil?
         raise ArgumentError, "Invalid secret"
       end
@@ -57,13 +54,12 @@ module Skirmish
       Timeout::timeout(seconds) do
         pair = nil
         begin
-          # TODO: fix BUG
-
-          # the kind of socket used here throws away anything not
-          # received on the first recvfrom_nonblock call. For now I've
-          # given it a very large buffer, but eventually it should be
-          # googled, perhaps usenet'd, and a way to recv without
-          # throwing out the rest should be figured out
+          # TODO: fix BUG: the kind of socket used here throws away
+          # anything not received on the first recvfrom_nonblock
+          # call. For now I've given it a very large buffer, but
+          # eventually it should be googled, perhaps usenet'd, and a
+          # way to recv without throwing out the rest should be
+          # figured out
           pair = @socket.recvfrom_nonblock(32767)
         rescue Errno::EAGAIN
           IO.select([@socket])

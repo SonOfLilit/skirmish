@@ -5,24 +5,29 @@ require 'rake/rdoctask'
 
 # === Project map
 # * skirmish
-#  * client
+#  * skirmish-client
 #   * bin
 #    * skirmish-client
 #   * src
 #    * *.rb
-#  * server
+#   * test
+#    * fakeserver.rb
+#    * test_*.rb
+#  * skirmish-server (structured to erlang conventions - erlang tools assume it)
 #   * src
-#    * *.erl
+#   * include
+#   * priv
+#   * ebin
 #  * tests (system-level acceptance tests)
 #   * automation.rb
-#   * n.storyname.rb
+#   * test_<storyname>.rb
 #  * doc
 #   * src
 #    * design
 #     * *.txt
 
-skirmish_client = 'client/bin/skirmish-client'
-client_tests = FileList['client/test/test_*.rb']
+skirmish_client = 'skirmish-client/bin/skirmish-client'
+client_tests = FileList['skirmish-client/test/test_*.rb']
 tests = FileList['test/test_*.rb']
 
 desc "Compile and run tests"
@@ -37,7 +42,7 @@ task :build => [:build_client]
 desc "Build client"
 task :build_client => [skirmish_client]
 
-file skirmish_client => ['client/src/skirmish-client.rb'] do |t|
+file skirmish_client => ['skirmish-client/src/skirmish-client.rb'] do |t|
   cp t.prerequisites[0], t.name
   chmod 0755, t.name
 end
@@ -45,7 +50,7 @@ CLOBBER << skirmish_client
 
 desc "Run client tests"
 Rake::TestTask.new :test_client => [:build_client] do |t|
-  t.libs << 'client/test'
+  t.libs << 'skirmish-client/test'
   t.test_files = client_tests
   t.warning = true
 end
