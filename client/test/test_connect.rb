@@ -6,10 +6,14 @@ require File.expand_path(File.join(File.dirname(__FILE__), '../src/connection'))
 class TestConnect < Test::Unit::TestCase
   include Skirmish
 
+  def random_string n
+    Array.new(n) { rand(256) }.pack("C*")
+  end
+
   def try_connect id, secret, &block
     @server = FakeServer.new Connection::DEFAULT_PORT, &block
 
-    Thread.abort_on_exception = true
+    Thread.abort_on_exception = true # otherwise t.raise doesn't work TODO ask why
     ct = Thread.new Thread.current do |t|
       begin
         Connection.new 'localhost', Connection::DEFAULT_PORT, id, secret
@@ -20,7 +24,7 @@ class TestConnect < Test::Unit::TestCase
 
     yield
 
-    ct.join
+    ct.join # wait for thread to finish
 
   ensure
     begin
@@ -59,12 +63,41 @@ class TestConnect < Test::Unit::TestCase
     can_connect_with 'aA1', secret.reverse!
   end
 
+  def local_error_on_connect_with id, secret
+    assert_raise ArgumentError do
+      Connection.new 'localhost', Connection::DEFAULT_PORT, id, secret
+    end
+  end
+  def test_too_short_id
+    local_error_on_connect_with 'aa', 'bcdefg'
+  end
+  def test_empty_id
+    local_error_on_connect_with '', 'bcdefg'
+  end
+  def test_too_long_id
+    local_error_on_connect_with 'a' * 17, 'bcdefg'
+  end
+  def test_very_long_id
+    local_error_on_connect_with 'a' * 1024, 'bcdefg'
+  end
+  def test_too_long_secret
+    local_error_on_connect_with 'aaa', 'a' * 256
+  end
+  def test_very_long_secret
+    local_error_on_connect_with 'aaa', random_string(1024)
+  end
+
   def wrong_protocol_version message
     assert_raise ServerFatal do
-      try_connect 'abcd', 'efgh' do
-        @server.expect "version #{Connection::PROTOCOL_VERSION}\n"
-        @server.send "fatal " + message
-        @server.close
+      begin
+        try_connect 'abcd', 'efgh' do
+          @server.expect "version #{Connection::PROTOCOL_VERSION}\n"
+          @server.send "fatal " + message
+          @server.close
+        end
+      rescue ServerFatal => e
+        assert_match message, e.to_s
+        raise e
       end
     end
   end
@@ -72,6 +105,12 @@ class TestConnect < Test::Unit::TestCase
     wrong_protocol_version "Wrong protocol version\n"
   end
   def test_wrong_protocol_version_long_message
-    wrong_protocol_version Array.new(1024) { rand(256) }.to_s
+    wrong_protocol_version random_string(1024)
+  end
+  # This is not a legal case, so if this fails it is alright, as long
+  # as nothing horrible happens. It was easier to write the test this
+  # way - over-requiring - than just testing that nothing major breaks
+  def test_wrong_protocol_version_too_long_message
+    wrong_protocol_version random_string(4096)
   end
 end

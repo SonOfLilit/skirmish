@@ -3,8 +3,8 @@ require 'timeout'
 
 module Skirmish
 
-  class NetworkProtocolError < Exception; end
-  class ServerFatal < Exception; end
+  class NetworkProtocolError < Exception; end # TODO: #to_s
+  class ServerFatal < Exception; end # TODO: #to_s
 
   class Connection
 
@@ -18,11 +18,30 @@ module Skirmish
     def initialize host, port, id, secret
       @buffer = ''
 
+      validate_id id
+      validate_secret secret
+
       connect host, port
       send "version #{PROTOCOL_VERSION}\n"
       wait_for_ok_or_fatal
       send "id #{id}\nsecret #{secret}\n"
       wait_for_ok_or_fatal
+    end
+
+    def validate_id id
+      # TODO better message
+      raise ArgumentError, "id too short" unless id.length >= 3
+      raise ArgumentError, "id too long" unless id.length <= 16
+      unless id =~ /^[0-9a-zA-Z.]*$/
+        raise ArgumentError, "id may only contain letters, numbers and dots"
+      end
+    end
+
+    def validate_secret secret
+      # TODO better message
+      unless secret.length <= 255 and secret["\n"].nil?
+        raise ArgumentError, "Invalid secret"
+      end
     end
 
     def connect host, port
@@ -62,7 +81,7 @@ module Skirmish
         @buffer[0, 3] = ''
       elsif @buffer[0, 5].eql? "fatal"
         @socket.close
-        raise ServerFatal, @buffer[7, -1]
+        raise ServerFatal, @buffer[6..-1]
       else
         @socket.close
         raise NetworkProtocolError
