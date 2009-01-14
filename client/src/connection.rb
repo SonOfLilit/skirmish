@@ -4,6 +4,7 @@ require 'timeout'
 module Skirmish
 
   class NetworkProtocolError < Exception; end
+  class ServerFatal < Exception; end
 
   class Connection
 
@@ -12,14 +13,16 @@ module Skirmish
     # in honor of my friends, FIRST Robotics Competition team #1657 HAMOSSAD
     DEFAULT_PORT = 1657
 
+    TIMEOUT=20
+
     def initialize host, port, id, secret
       @buffer = ''
 
       connect host, port
       send "version #{PROTOCOL_VERSION}\n"
-      wait_for_ok
+      wait_for_ok_or_fatal
       send "id #{id}\nsecret #{secret}\n"
-      wait_for_ok
+      wait_for_ok_or_fatal
     end
 
     def connect host, port
@@ -51,15 +54,17 @@ module Skirmish
       end
     end
 
-    def wait_for_ok
-      Timeout::timeout(5) do
-        while @buffer.length < 3
-          read 5
-        end
+    def wait_for_ok_or_fatal
+      if @buffer.length < 3
+          read TIMEOUT
       end
       if @buffer[0, 3].eql? "ok\n"
         @buffer[0, 3] = ''
+      elsif @buffer[0, 5].eql? "fatal"
+        @socket.close
+        raise ServerFatal, @buffer[7, -1]
       else
+        @socket.close
         raise NetworkProtocolError
       end
     end
