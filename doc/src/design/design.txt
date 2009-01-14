@@ -69,6 +69,10 @@ High Level Design
 Client-Server Protocol
 ----------------------
 
+Communication is based on UDP.
+
+Client always initiates communication. Default port is 1657.
+
 '[...]' means that a lot of time may pass between the former and
 current stages.
 
@@ -105,10 +109,28 @@ Server
 Written in Erlang, supports one game for one player but built with
 extensibility in mind.
 
+A restaurant metaphor is used to name things. Female role-names
+(hostess, waitress) are used since the male equivalents (host, waiter)
+already have other uses in computer engineering. No offence to anyone
+intended.
+
+A `hostess` 'gen_server' listens for UDP communication on port
+1657. When a connection happens, a `waitress` 'gen_fsm' instance is
+created to handle communication on that connection. The
+
 Client
 ------
 
 Written in Ruby with Cairo graphics and matrix.rb math.
+
+At the moment, everything before the game starts is handled by a Text
+User Interface consisting of a Ruby REPL. This TUI will remain into
+release (it is essential to system-level testability) but will become
+optional, with a GUI as the default.
+
+From the moment the game starts, the main interface will be Graphical
+(Cairo-based), with the console remaining in another window only if it
+was requested (a `--console` command line option will handle that).
 
 Future
 ------
