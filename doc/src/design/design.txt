@@ -84,7 +84,8 @@ with a pong message for times of low communication volumes.
 
 - A client connects to the server via UDP
 - Initial handshake (client sends protocol version, identifier; server
-  disconnects with message or accepts)
+  disconnects with message or accepts from a different port, which
+  client should communicate with from now on)
 - Client may do one of:
  * [...] Request new game (no parameters; server refuses with message or
    accepts)

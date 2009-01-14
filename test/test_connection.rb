@@ -33,4 +33,15 @@ class ConnectionTests < Skirmish::SystemTest
       end
     end
   end
+
+  def test_unreachable_host
+    assert_raise HostUnreachable do
+      start_client "asd", "", "otherhost"
+    end
+  end
+  def test_wrong_port
+    assert_raise HostUnreachable do
+      start_client "asd", "", "localhost", 9999
+    end
+  end
 end

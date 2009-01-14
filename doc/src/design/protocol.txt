@@ -15,12 +15,15 @@ protocol within games will be binary.
 Responses
 ---------
 
-In general, "ok\n" is an ACK - it is sent to signify that a message
-was received and everything is OK; "fatal <string>" reports an error
-that requires the server to disconnect the client, and is followed by
-disconnecting. The string may be up to 1KiB long and may contain any
-character.
+In general:
 
+* "ok\n\n" is an ACK - it is sent to signify that a message was received
+and everything is OK
+* "fatal <string>" reports an error that requires the server to
+disconnect the client, and is followed by disconnecting. The string
+may be up to 1KiB long and may contain any character.
+* Every message is contained in one UDP packet with a body of no more
+  than 8192 bytes
 
 Handshake
 ---------
@@ -29,26 +32,9 @@ Client sends
 
 ---------
 version <int>\n
----------
-
-Server answers
-
----------
-ok\n
----------
-
-or
-
----------
-fatal <string>
-<disconnects>
----------
-
-Client sends
-
----------
 id <id_string>\n
 secret <secret_string>\n
+\n
 ---------
 
 // {num} has special meaning to AsciiDoc (so instead we write \{n})
@@ -56,14 +42,26 @@ secret <secret_string>\n
 where <id_string> matches /[0-9a-zA-Z.]\{3-16}/ and <secret string>
 matches /.\{0-255}/ (with '.' not matching newline).
 
-Server may respond
+Server responds
+
+---------
+fatal <message>
+<disconnects>
+---------
+
+or
 
 ---------
 ok\n
+\n
 ---------
 
-or, if the identifier is in use,
+from *different address/port*. Client must subsequently communicate
+with that address/port combination.
 
----------
-fatal <string>
----------
+WARNING: This is a security vulnerability, as an attacker might
+bombard known players with "ok\n\n" messages and hijack
+sessions. However, any UDP protocol not preceded by establishment of a
+shared secret by encrypted TCP that is later used to generate a
+sequence of packet IDs is totally insecure. Eventually such a protocol
+will be implemented. In the meantime, we live with insecurity.

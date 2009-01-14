@@ -3,7 +3,9 @@ require 'timeout'
 
 module Skirmish
 
+  class NetworkTimeout < Exception; end # TODO: #to_s
   class NetworkProtocolError < Exception; end # TODO: #to_s
+  class ServerNotFound < Exception; end # TODO: #to_s
   class ServerFatal < Exception; end # TODO: #to_s
 
   class Connection
@@ -12,7 +14,7 @@ module Skirmish
     # in honor of my friends, FIRST Robotics Competition team #1657 HAMOSSAD
     DEFAULT_PORT = 1657
 
-    TIMEOUT=20
+    TIMEOUT=5
 
     def initialize host, port, id, secret
       @buffer = ''
@@ -20,11 +22,13 @@ module Skirmish
       validate_id id
       validate_secret secret
 
-      connect host, port
-      send "version #{PROTOCOL_VERSION}\n"
-      wait_for_ok_or_fatal
-      send "id #{id}\nsecret #{secret}\n"
-      wait_for_ok_or_fatal
+      begin
+        connect host, port
+        send "version #{PROTOCOL_VERSION}\nid #{id}\nsecret #{secret}\n\n"
+        read_ok_or_fatal
+      rescue NetworkTimeout, Errno::ECONNREFUSED, Errno::EHOSTUNREACH
+        raise ServerNotFound
+      end
     end
 
     def validate_id id
@@ -50,39 +54,41 @@ module Skirmish
       @socket.write string
     end
 
-    def read seconds
-      Timeout::timeout(seconds) do
-        pair = nil
-        begin
-          # TODO: fix BUG: the kind of socket used here throws away
-          # anything not received on the first recvfrom_nonblock
-          # call. For now I've given it a very large buffer, but
-          # eventually it should be googled, perhaps usenet'd, and a
-          # way to recv without throwing out the rest should be
-          # figured out
-          pair = @socket.recvfrom_nonblock(32767)
-        rescue Errno::EAGAIN
-          IO.select([@socket])
-          retry
+    def read_message_blocking timeout=TIMEOUT
+      begin
+        Timeout::timeout(timeout) do
+          pair = nil
+          begin
+            # TODO: fix BUG: the kind of socket used here throws away
+            # anything not received on the first recvfrom_nonblock
+            # call. For now I've given it a very large buffer, but
+            # eventually it should be googled, perhaps usenet'd, and a
+            # way to recv without throwing out the rest should be
+            # figured out
+            pair = @socket.recvfrom_nonblock(32767)
+          rescue Errno::EAGAIN
+            IO.select([@socket])
+            retry
+          end
+          return pair[0]
         end
-        @buffer << pair[0]
+      rescue Timeout::Error
+        raise NetworkTimeout
       end
     end
 
-    def wait_for_ok_or_fatal
-      if @buffer.length < 3
-          read TIMEOUT
-      end
-      if @buffer[0, 3].eql? "ok\n"
-        @buffer[0, 3] = ''
-      elsif @buffer[0, 5].eql? "fatal"
-        @socket.close
-        raise ServerFatal, @buffer[6..-1]
+    def read_ok_or_fatal
+      message = read_message_blocking
+      return if message.eql? "ok\n\n"
+
+      @socket.close
+      if message[0, 6].eql? "fatal "
+        raise ServerFatal, message[6..-1]
       else
-        @socket.close
-        raise NetworkProtocolError
+        raise NetworkProtocolError, "unexpected server response" + message.inspect
       end
     end
+
   end
 
 end

@@ -6,7 +6,7 @@ class FakeServer
   include Test::Unit::Assertions
 
   DEFAULT_TIMEOUT = 5
-  def initialize port, waittime=DEFAULT_TIMEOUT, &block
+  def initialize port, waittime=DEFAULT_TIMEOUT
     @timeout = waittime
     @buffer = ''
     @addr = nil
@@ -59,6 +59,10 @@ class FakeServer
 
   def close
     @listener.close
+  end
+
+  def closed?
+    @listener.closed?
   end
 
 end

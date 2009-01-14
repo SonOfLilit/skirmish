@@ -11,11 +11,12 @@ require 'rake/rdoctask'
 #   * src
 #    * *.rb
 #   * test
-#    * fakeserver.rb
+#    * fake-*.rb
 #    * test_*.rb
 #  * skirmish-server (structured to erlang conventions - erlang tools assume it)
 #   * src
 #   * include
+#   * test
 #   * priv
 #   * ebin
 #  * tests (system-level acceptance tests)
@@ -25,6 +26,8 @@ require 'rake/rdoctask'
 #   * src
 #    * design
 #     * *.txt
+
+CLOBBER << ".DS_Store"
 
 skirmish_client = 'skirmish-client/bin/skirmish-client'
 client_tests = FileList['skirmish-client/test/test_*.rb']

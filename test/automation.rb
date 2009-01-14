@@ -25,6 +25,10 @@ module Skirmish
 
     # Thrown when client reports fatal error from server
     class ServerFatal < Exception; end
+    # Thrown when client reports unreachable server
+    class HostUnreachable < Exception; end
+    # Thrown when client reports network error
+    class NetworkError < Exception; end
 
     # start a skirmish server
     #
@@ -47,7 +51,7 @@ module Skirmish
     # start a skirmish client
     #
     # do not use if you require more than one client alive
-    def start_client id, secret, &block
+    def start_client id, secret, host="localhost", port=SERVER_PORT, &block
       client_cmd = File.join(CLIENT_DIR, 'bin/skirmish-client') + ' --console'
       @automation_client = IO.popen(client_cmd, 'w+')
       client = @automation_client
@@ -57,10 +61,12 @@ module Skirmish
 
       yield if block
 
-      client.write("connect 'localhost', #{SERVER_PORT}, "
+      client.write("connect #{host.inspect}, #{port.inspect}, " \
                    "#{id.inspect}, #{secret.inspect}\n");
       response = client.readline
-      raise ServerFatal if response =~ /server fatal/i
+      raise ServerFatal if response =~ /server error/i
+      raise UnreachableHost if response =~ /unreachable/i
+      raise NetworkError if response =~ /network error/i
 
       assert_match(/connected/i, response, "failed to start client")
     end
