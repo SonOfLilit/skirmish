@@ -40,9 +40,8 @@ module Skirmish
     end
 
     def validate_secret secret
-      unless secret.length <= 255 and secret["\n"].nil?
-        raise ArgumentError, "Invalid secret"
-      end
+      raise ArgumentError, "Secret too long - keep at 255 characters" if secret.length > 255
+      raise ArgumentError, "Secret may not contain newlines" if secret.index("\n")
     end
 
     def connect host, port

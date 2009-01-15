@@ -11,27 +11,40 @@ class TestConnect < Test::Unit::TestCase
   end
 
   def local_error_on_connect_with id, secret
-    assert_raise ArgumentError do
-      Connection.new 'localhost', Connection::DEFAULT_PORT, id, secret
+    assert_raise ArgumentError, "Connect did not fail on illegal identifiers " \
+    "#{id.inspect}, #{secret.inspect}" do
+      Connection.new "localhost", Connection::DEFAULT_PORT, id, secret
     end
   end
   def test_too_short_id
-    local_error_on_connect_with 'aa', 'bcdefg'
+    local_error_on_connect_with "aa", "bcdefg"
   end
   def test_empty_id
-    local_error_on_connect_with '', 'bcdefg'
+    local_error_on_connect_with "", "bcdefg"
+  end
+  def test_garbage_id
+    local_error_on_connect_with "ab,", "cdefg"
+    local_error_on_connect_with "!ab", "cdefg"
+    local_error_on_connect_with "--asdf--", "cdefg"
+    local_error_on_connect_with "\n", "cdefg"
+    local_error_on_connect_with "-=[Ment0r]=-,", "cdefg"
+  end
+  def test_newline_in_secret
+    local_error_on_connect_with "abc", "\n"
+    local_error_on_connect_with "abc", "\n\n asdf \n\n"
+    local_error_on_connect_with '!@#$', "\n"
   end
   def test_too_long_id
-    local_error_on_connect_with 'a' * 17, 'bcdefg'
+    local_error_on_connect_with "a" * 17, "bcdefg"
   end
   def test_very_long_id
-    local_error_on_connect_with 'a' * 1024, 'bcdefg'
+    local_error_on_connect_with "a" * 1024, "bcdefg"
   end
   def test_too_long_secret
-    local_error_on_connect_with 'aaa', 'a' * 256
+    local_error_on_connect_with "aaa", "a" * 256
   end
   def test_very_long_secret
-    local_error_on_connect_with 'aaa', random_string(1024)
+    local_error_on_connect_with "aaa", random_string(1024)
   end
 
   def call_connect options
@@ -90,28 +103,28 @@ class TestConnect < Test::Unit::TestCase
   end
 
   def test_simplest_valid_case
-    connect_with 'abc', ''
+    connect_with "abc", ""
   end
   def test_average_valid_case
-    connect_with 'abcdefg', 'hijklmnop'
+    connect_with "abcdefg", "hijklmnop"
   end
   def test_long_id_and_secret
-    connect_with 'a' * 16, 'a' * 228 # there was a bug at this length exactly
+    connect_with "a" * 16, "a" * 228 # there was a bug at this length exactly
   end
   def test_longest_allowed_id_and_secret
-    connect_with 'a' * 16, 'a' * 255 # maximum lengths
+    connect_with "a" * 16, "a" * 255 # maximum lengths
   end
   def test_most_contrived_valid_case
     # \x00\01\02..\x08\x09\x0B\x0C..\xFF -- all but the newline
     array = ([*(0..(?\n-1))] + [*((?\n+1)..255)])
-    secret = array.pack('C*')
+    secret = array.pack("C*")
     assert_equal 255, secret.length
-    connect_with 'aA1.aA1.aA1.aA1.', secret
+    connect_with "aA1.aA1.aA1.aA1.", secret
   end
 
   def test_server_unreachable
     assert_raise ServerNotFound do
-      connect :host => '10.255.0.127', :fake_server => false
+      connect :host => "10.255.0.127", :fake_server => false
     end
   end
   def test_not_server
