@@ -1,0 +1,1 @@
+-define(PROTOCOL_VERSION, 0). % Version of protocol between client and server TODO: DRY with client

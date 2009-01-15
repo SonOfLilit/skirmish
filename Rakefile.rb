@@ -3,31 +3,40 @@ require 'rake/clean'
 require 'rake/testtask'
 require 'rake/rdoctask'
 
+# erlang common_test run_test script
+run_test = '/usr/local/lib/erlang/lib/common_test-*/priv/bin/run_test'
+
 # === Project map
 # * skirmish
 #  * skirmish-client
 #   * bin
-#    * skirmish-client
+#    * 'skirmish-client'
 #   * src
-#    * *.rb
+#    * '*.rb'
 #   * test
-#    * fake-*.rb
-#    * test_*.rb
+#    * 'fake-*.rb'
+#    * 'test_*.rb'
 #  * skirmish-server (structured to erlang conventions - erlang tools assume it)
+#   * 'Emakefile'
 #   * src
+#    * '*.erl'
+#    * '*.hrl'
 #   * include
+#    * '*.hrl'
 #   * test
+#    * '*_SUITE.erl'
 #   * priv
 #   * ebin
 #  * tests (system-level acceptance tests)
-#   * automation.rb
-#   * test_<storyname>.rb
+#   * 'automation.rb'
+#   * 'test_<storyname>.rb'
 #  * doc
 #   * src
 #    * design
-#     * *.txt
+#     * '*.txt'
 
-CLOBBER << ".DS_Store"
+CLOBBER.clear_exclude
+CLOBBER << Dir["**/.DS_Store"]
 
 skirmish_client = 'skirmish-client/bin/skirmish-client'
 client_tests = FileList['skirmish-client/test/test_*.rb']
@@ -59,10 +68,21 @@ Rake::TestTask.new :test_client => [:build_client] do |t|
 end
 
 desc "Build server"
-task :build_server
+task :build_server do
+  cd 'skirmish-server'
+  sh "erl -make"
+  cd '..'
+end
+CLOBBER << Dir['**/*.beam']
 
 desc "Run server tests"
-task :test_server => [:build_server]
+server_log_dir = 'skirmish-server/test-log/'
+directory server_log_dir
+task :test_server => [:build_server, server_log_dir] do
+  server_lib = File.expand_path "skirmish-server"
+  sh "export ERL_LIB=$ERL_LIB:#{server_lib};#{run_test} -dir skirmish-server/test -logdir skirmish-server/test-log/"
+end
+CLOBBER << server_log_dir
 
 desc "Run tests"
 Rake::TestTask.new :test => [:test_client, :test_server] do |t|

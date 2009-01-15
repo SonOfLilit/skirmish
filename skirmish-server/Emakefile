@@ -1,0 +1,2 @@
+{'src/skirmish_server*', [debug_info, report, {outdir, 'ebin'}]}.
+
