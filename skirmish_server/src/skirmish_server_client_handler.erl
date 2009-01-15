@@ -46,76 +46,60 @@ start({IP, Port}, Msg) ->
 %% gen_fsm:start_link/3,4, this function is called by the new process to 
 %% initialize. 
 %%--------------------------------------------------------------------
-init({{IP, Port}, Msg}) ->
+init({Addr = {IP, Port}, Msg}) ->
     {ok, Socket} = gen_udp:open(0, [list, {active,true}]),
+    error_logger:info_msg("~p sent ~p", [Addr, Msg]),
     Resp = response_to_handshake(Msg),
+    error_logger:info_msg("responding ~p", [Resp]),
     ok = gen_udp:send(Socket, IP, Port, Resp),
     {ok, state_name, #state{ip=IP, port=Port, socket=Socket}}.
 
-response_to_handshake("version " ++ R) ->
-    resp(parse_version, R);
-response_to_handshake(_) ->
-    fatal_parse_error().
-resp(parse_version, ?PROTOCOL_VERSION_STR ++ R) ->
-    resp(parse_nl, R);
-resp(parse_version, _) ->
-    fatal_protocol_mismatch();
-resp(parse_nl, [?NEWLINE | R]) ->
-    resp(parse_proto, R);
-resp(parse_nl, _) ->
-    fatal_parse_error();
-resp(parse_proto, "id " ++ R) ->
-    resp(parse_id, R);
-resp(parse_proto, _) ->
-    fatal_parse_error();
-resp(parse_id, R) ->
-    case lists:splitwith(fun is_not_newline/1, R) of
-        {Id, [?NEWLINE | T]} ->
-            resp(parse_proto2, Id, T);
-        {_, []} ->
-            fatal_parse_error()
+response_to_handshake(Handshake) ->
+    case parse_handshake(Handshake) of
+	{ok, _, _} ->
+	    ok();
+	parse_error ->
+	    fatal("You have reached a Skirmish server, and yet you are not a Skirmish client");
+	wrong_protocol_version ->
+	    fatal("Server is running a different version of Skirmish (" ++
+		  ?PROTOCOL_VERSION_STR ++ ")");
+	id_too_short ->
+	    fatal("id too short, must be at least 3 characters");
+	id_too_long ->
+    	    fatal("id too long, must be at most 16 characters");
+	id_illegal_chars ->
+	    fatal("id contains illegal characters, must all be letters, numbers or dots");
+	secret_too_long ->
+	    fatal("Secret too long, must be at most 255 characters");
+	secret_illegal_chars ->
+	    fatal("Secret may not contain newlines");
+	Result ->
+	    error_logger:error_msg("Unexpected error during parsing, got ~p", [Result]),
+	    fatal("Server Error. Please try again later.")
     end.
 
-% now we have three arguments
-resp(parse_proto2, Id, "secret " ++ R) ->
-    resp(parse_secret, Id, R);
-resp(parse_proto2,_,_) ->
-    fatal_parse_error();
-resp(parse_secret, Id, R) ->
-    case lists:splitwith(fun is_not_newline/1, R) of
-        {Secret, [?NEWLINE, ?NEWLINE]} ->
-	    validate_id(Id, Secret);
-	_Else ->
-	    fatal_parse_error()
-    end.
+fatal(Msg) ->
+    "fatal " ++ Msg.
+ok() ->
+    "ok" ++ ?NL ++ ?NL.
 
 validate_id(Id, Secret) ->
+    Valid = lists:all(fun is_valid_id_char/1, Id),
+    NoNewLines = string:str(Secret, ?NL) == 0,
     if
-	not length(Id) >= 3 ->
-	    fatal("id too short, must be at least 3 characters");
-	not length(Id) =< 16 ->
-	    fatal("id too long, must be at most 16 characters");
+	not(length(Id) >= 3) ->
+	    throw(id_too_short);
+	not(length(Id) =< 16) ->
+	    throw(id_too_long);
+	not Valid ->
+	    throw(id_illegal_chars);
+	not(length(Secret) =< 255) ->
+	    throw(secret_too_long);
+	not NoNewLines ->
+	    throw(secret_illegal_chars);
 	true ->
-	    Valid = lists:all(fun is_valid_id_char/1, Id),
-	    if
-		not Valid ->
-		    fatal("id contains illegal characters, must all be letters, numbers or dots");
-		
-		not length(Secret) =< 255 ->
-		    fatal("Secret too long, must be at most 255 characters");
-		true ->
-		    NoNL = string:str(Secret, ?NL) == 0,
-		    if
-			not NoNL ->
-			    fatal("Secret may not contain newlines");
-			true ->
-			    ok()
-		    end
-	    end
+	    {ok, Id, Secret}
     end.
-
-is_not_newline(C) ->
-    C /= ?NEWLINE.
 
 is_valid_id_char(C) ->
     (C >= $a andalso C =< $z) orelse
@@ -123,16 +107,53 @@ is_valid_id_char(C) ->
     (C >= $0 andalso C =< $9) orelse
     (C == $.).
 
-fatal_protocol_mismatch() ->
-    fatal("Server is running a different version of Skirmish (" ++
-          ?PROTOCOL_VERSION_STR ++ ")").
-fatal_parse_error() ->
-    fatal("You have reached a Skirmish server, and yet you are not a Skirmish client").
-fatal(Msg) ->
-    "fatal " ++ Msg.
+match([H | Message], [H | FieldName]) ->
+    match(Message, FieldName);
+match(Rest, []) ->
+    Rest;
+match(_, _) ->
+    throw(parse_error).
 
-ok() ->
-    "ok" ++ ?NL ++ ?NL.
+match_exactly(S1, S2) when is_list(S1), is_list(S2) ->
+    case string:equal(S1, S2) of
+	false ->
+	    throw(parse_error);
+	true ->
+	    ok
+    end.
+
+match_rest_of_line(Buffer) ->
+    case lists:splitwith(fun is_not_newline/1, Buffer) of
+	{Value, [?NEWLINE | Rest]} ->
+	    {Value, Rest};
+	_ ->
+	    throw(parse_error)
+    end.
+
+is_not_newline(C) ->
+    C /= ?NEWLINE.
+
+match_line(Message, FieldName) ->
+    match_rest_of_line(match(Message, FieldName)).
+
+parse_handshake(Handshake) ->
+    catch(do_parse_handshake(Handshake)).
+
+do_parse_handshake(Handshake) ->
+    {Version, Rest1} = match_line(Handshake, "version "),
+    try
+	match_exactly(?PROTOCOL_VERSION_STR, Version)
+    catch
+	parse_error ->
+	    throw(wrong_protocol_version)
+    end,
+
+    {Id, Rest2} = match_line(Rest1, "id "),
+    {Secret, Rest3} = match_line(Rest2, "secret "),
+
+    {[], []} = match_line(Rest3, ""),
+
+    validate_id(Id, Secret).
 
 %%--------------------------------------------------------------------
 %% Function: 

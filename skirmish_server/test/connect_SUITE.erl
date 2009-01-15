@@ -45,7 +45,9 @@ all() ->
      test_too_long_id,
      test_very_long_id,
      test_too_long_secret,
-     test_very_long_secret,
+     test_huge_random_secret,
+     test_both_long,
+     test_id_garbage,
      test_simplest_valid_case,
      test_average_valid_case,
      test_longest_allowed_id_and_secret,
@@ -62,69 +64,87 @@ all() ->
 %%--------------------------------------------------------------------
 
 test_too_short_id(_Config) ->
-    {skip, notimplemented}.
+    fatal_contains("ab", "", "too short").
 
 test_empty_id(_Config) ->
-    {skip, notimplemented}.
+    fatal_contains("", "asd", "too short").
+
+test_empty_both(_Config) ->
+    fatal_contains("", "", "too short").
 
 test_too_long_id(_Config) ->
-    {skip, notimplemented}.
+    fatal_contains(a(17), "", "too long").
 
 test_very_long_id(_Config) ->
-    {skip, notimplemented}.
+    fatal_contains(a(1024), "", "too long").
 
 test_too_long_secret(_Config) ->
-    {skip, notimplemented}.
+    fatal_contains("abcde", a(1024), "too long").
 
-test_very_long_secret(_Config) ->
-    {skip, notimplemented}.
+test_huge_random_secret(_Config) ->
+    {skip, "Until I find a way to format it"}.
+%    fatal_contains("abcd", rand(4096), "seecret").
+
+test_both_long(_Config) ->
+    fatal_contains(a(200), a(1500), "").
+
+test_id_garbage(_Config) ->
+    fatal_contains(rand(200), "", "").
 
 %%--------------------------------------------------------------------
 %% Valid cases
 %%--------------------------------------------------------------------
 
 test_simplest_valid_case(_Config) ->
-    test_valid_connection_request("abc", "").
+    success("abc", "").
 
 test_average_valid_case(_Config) ->
-    test_valid_connection_request("abcdefg", "hijklmnop").
+    success("abcdefg", "hijklmnop").
 
 test_longest_allowed_id_and_secret(_Config) ->
-    test_valid_connection_request(lists:duplicate(16, "a"),
-				  lists:duplicate(255, "a")).
+    success(a(16), a(255)).
 
 test_most_contrived_valid_case(_Config) ->
-    test_valid_connection_request("aA1.aA1.aA1.aA1.",
-				  lists:seq(1, 9) ++ lists:seq(11, 255)).
+    success("aA1.aA1.aA1.aA1.", lists:seq(1, 9) ++ lists:seq(11, 255)).
 
 %%--------------------------------------------------------------------
 %% Network issues
 %%--------------------------------------------------------------------
 
 test_protocol_error(_Config) ->
-    Error = test_fatal_contains_token("asdf", "Skirmish server").
+    Error = fatal_contains("asdf", "Skirmish server").
 
 test_wrong_protocol_version(_Config) ->
-    test_wrong_protocol_version_with(?PROTOCOL_VERSION - 1),
+% TODO: enable when protocol version increases
+%    test_wrong_protocol_version_with(?PROTOCOL_VERSION - 1),
     test_wrong_protocol_version_with(?PROTOCOL_VERSION + 1).
 
 test_wrong_protocol_version_with(FakeVersion) ->
     Handshake = format_handshake("abc", "def", FakeVersion),
-    Error = test_fatal_contains_token(Handshake, "version").
-
-test_fatal_contains_token(Message, Token) ->
-    Response = connect(Message),
-    "fatal " ++ _ = Response,
-    true = length(Response) =< 1024,
-    true = string:str(Response, Token) > 0.
+    fatal_contains(Handshake, "version").
 
 
 
 %%--------------------------------------------------------------------
 %% INTERNAL
 %%--------------------------------------------------------------------
-     
-test_valid_connection_request(Id, Secret) -> 
+
+a(N) ->
+    lists:duplicate(N, "a").
+
+rand(N) ->
+    [random:uniform(256) || _ <- lists:seq(1, N)].
+
+fatal_contains(Message, Token) ->
+    Response = connect(Message),
+    "fatal " ++ _ = Response,
+    true = length(Response) =< 1024,
+    true = string:str(Response, Token) > 0.
+
+fatal_contains(Id, Secret, Token) ->
+    fatal_contains(format_handshake(Id, Secret), Token).
+
+success(Id, Secret) -> 
     "ok" ++ [10, 10] = connect(format_handshake(Id, Secret)).
 
 connect(Message) ->
@@ -146,6 +166,5 @@ format_handshake(Id, Secret, Version) ->
     io_lib:format("version ~w~n"
 		  "id ~s~n"
 		  "secret ~s~n"
-
 		  "~n",
 		  [Version, Id, Secret]).
