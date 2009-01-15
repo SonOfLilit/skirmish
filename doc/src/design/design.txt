@@ -110,14 +110,9 @@ Server
 Written in Erlang, supports one game for one player but built with
 extensibility in mind.
 
-A restaurant metaphor is used to name things. Female role-names
-(hostess, waitress) are used since the male equivalents (host, waiter)
-already have other uses in computer engineering. No offence to anyone
-intended.
-
-A `hostess` 'gen_server' listens for UDP communication on port
-1657. When a connection happens, a `waitress` 'gen_fsm' instance is
-created to handle communication on that connection. The
+A `listener` 'gen_server' listens for UDP communication on port
+1657. When a connection happens, a `client_handler` 'gen_fsm' instance
+is created to handle communication on that connection. The
 
 Client
 ------

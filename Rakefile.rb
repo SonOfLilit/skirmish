@@ -16,7 +16,7 @@ run_test = '/usr/local/lib/erlang/lib/common_test-*/priv/bin/run_test'
 #   * test
 #    * 'fake-*.rb'
 #    * 'test_*.rb'
-#  * skirmish-server (structured to erlang conventions - erlang tools assume it)
+#  * skirmish_server (structured to erlang conventions - erlang tools assume it)
 #   * 'Emakefile'
 #   * src
 #    * '*.erl'
@@ -37,6 +37,7 @@ run_test = '/usr/local/lib/erlang/lib/common_test-*/priv/bin/run_test'
 
 CLOBBER.clear_exclude
 CLOBBER << Dir["**/.DS_Store"]
+CLOBBER << Dir["**/erl_crash.dump"]
 
 skirmish_client = 'skirmish-client/bin/skirmish-client'
 client_tests = FileList['skirmish-client/test/test_*.rb']
@@ -49,7 +50,7 @@ desc "Compile, run tests and build documentation"
 task :all => [:build, :test, :doc]
 
 desc "Compile everything"
-task :build => [:build_client]
+task :build => [:build_server, :build_client]
 
 desc "Build client"
 task :build_client => [skirmish_client]
@@ -68,21 +69,25 @@ Rake::TestTask.new :test_client => [:build_client] do |t|
 end
 
 desc "Build server"
-task :build_server do
-  cd 'skirmish-server'
+task :build_server => "skirmish_server/ebin/skirmish_server.app" do
+  cd 'skirmish_server'
   sh "erl -make"
   cd '..'
 end
 CLOBBER << Dir['**/*.beam']
 
-desc "Run server tests"
-server_log_dir = 'skirmish-server/test-log/'
-directory server_log_dir
-task :test_server => [:build_server, server_log_dir] do
-  server_lib = File.expand_path "skirmish-server"
-  sh "export ERL_LIB=$ERL_LIB:#{server_lib};#{run_test} -dir skirmish-server/test -logdir skirmish-server/test-log/"
+file "skirmish_server/ebin/skirmish_server.app" do |t|
+  cp t.name.sub("ebin", "src"), t.name
 end
-CLOBBER << server_log_dir
+CLOBBER << "skirmish_server/ebin/skirmish_server.app"
+
+server_test_log_dir = 'skirmish_server/test-log/'
+directory server_test_log_dir
+desc "Run server tests"
+task :test_server => [:build_server, server_test_log_dir] do
+  sh "#{run_test} -pa skirmish_server/ebin -dir skirmish_server/test -logdir skirmish_server/test-log"
+end
+CLOBBER << server_test_log_dir
 
 desc "Run tests"
 Rake::TestTask.new :test => [:test_client, :test_server] do |t|

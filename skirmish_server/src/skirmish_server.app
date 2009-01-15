@@ -1,8 +1,10 @@
-{application, skirmish-server,
+{application, skirmish_server,
  [{description, "Skirmish Server"},
   {vsn, "0"},
   {modules, [skirmish_server, skirmish_server_sup, skirmish_server_listener]},
-  {registered, []}, % TODO: figure out what processes we register
+  {registered, [skirmish_server_sup]},
   {applications, [kernel, stdlib]},
-  {mod, {skirmish_server_sup,[]}}
+  {mod,
+   {skirmish_server, []}
+  }
  ]}.

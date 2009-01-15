@@ -47,7 +47,8 @@ start_link() ->
 init([]) ->
     init([{port,?DEFAULT_PORT}]);
 init([{port, Port}]) ->
-    {ok, #state{}}.
+    {ok, Socket} = gen_udp:open(Port, [list, {active,true}]),
+    {ok, #state{socket=Socket}}.
 
 %%--------------------------------------------------------------------
 %% Function: %% handle_call(Request, From, State) -> {reply, Reply, State} |
@@ -77,7 +78,10 @@ handle_cast(_Msg, State) ->
 %%                                       {stop, Reason, State}
 %% Description: Handling all non call/cast messages
 %%--------------------------------------------------------------------
-handle_info(_Info, State) ->
+handle_info({udp, Socket, IP, InPortNo, Packet}, State=#state{socket=Socket}) ->
+    skirmish_server_client_handler:start({IP, InPortNo}, Packet),
+    {noreply, State};
+handle_info(_Msg, State) ->
     {noreply, State}.
 
 %%--------------------------------------------------------------------
@@ -87,7 +91,8 @@ handle_info(_Info, State) ->
 %% cleaning up. When it returns, the gen_server terminates with Reason.
 %% The return value is ignored.
 %%--------------------------------------------------------------------
-terminate(_Reason, _State) ->
+terminate(_Reason, #state{socket=Socket}) ->
+    gen_udp:close(Socket),
     ok.
 
 %%--------------------------------------------------------------------

@@ -26,7 +26,7 @@
 %% top supervisor of the tree.
 %%--------------------------------------------------------------------
 start(_Type, StartArgs) ->
-    case skirmish_server_sup:start_link(StartArgs) of
+    case skirmish_server_sup:start_link() of
 	{ok, Pid} -> 
 	    {ok, Pid};
 	Error ->
