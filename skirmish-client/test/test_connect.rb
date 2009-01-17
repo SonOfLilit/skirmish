@@ -3,7 +3,9 @@ require 'thread'
 require 'fake-server'
 require File.expand_path(File.join(File.dirname(__FILE__), '../src/connection'))
 
-class TestConnect < Test::Unit::TestCase
+
+module ConnectionTestHelper
+
   include Skirmish
 
   def random_string n
@@ -16,38 +18,8 @@ class TestConnect < Test::Unit::TestCase
       Connection.new "localhost", Connection::DEFAULT_PORT, id, secret
     end
   end
-  def test_too_short_id
-    local_error_on_connect_with "aa", "bcdefg"
-  end
-  def test_empty_id
-    local_error_on_connect_with "", "bcdefg"
-  end
-  def test_garbage_id
-    local_error_on_connect_with "ab,", "cdefg"
-    local_error_on_connect_with "!ab", "cdefg"
-    local_error_on_connect_with "--asdf--", "cdefg"
-    local_error_on_connect_with "\n", "cdefg"
-    local_error_on_connect_with "-=[Ment0r]=-,", "cdefg"
-  end
-  def test_newline_in_secret
-    local_error_on_connect_with "abc", "\n"
-    local_error_on_connect_with "abc", "\n\n asdf \n\n"
-    local_error_on_connect_with '!@#$', "\n"
-  end
-  def test_too_long_id
-    local_error_on_connect_with "a" * 17, "bcdefg"
-  end
-  def test_very_long_id
-    local_error_on_connect_with "a" * 1024, "bcdefg"
-  end
-  def test_too_long_secret
-    local_error_on_connect_with "aaa", "a" * 256
-  end
-  def test_very_long_secret
-    local_error_on_connect_with "aaa", random_string(1024)
-  end
 
-  def call_connect options
+  def connection_new options
     Connection.new options[:host], options[:port], options[:id], options[:secret]
   end
 
@@ -56,7 +28,7 @@ class TestConnect < Test::Unit::TestCase
     parent = Thread.current
     thread = Thread.new do
       begin
-        call_connect options
+        connection_new options
       rescue Object => e
         parent.raise e
       end
@@ -89,10 +61,10 @@ class TestConnect < Test::Unit::TestCase
     options[:server_port] ||= default_port
     options[:server_response] ||= "ok\n\n"
 
-    if options[:fake_server] != false
+    if options[:fake_server] != false # default is true
       connect_with_fake_server options
     else
-      call_connect options
+      connection_new options
     end
   end
 
@@ -101,6 +73,62 @@ class TestConnect < Test::Unit::TestCase
     options[:secret] = secret
     connect options
   end
+
+  def ensure_server_fatal message, &block
+    assert_raise ServerFatal do
+      begin
+        connect :server_response => "fatal #{message}"
+      rescue ServerFatal => e
+        assert_match message, e.to_s
+        raise e
+      end
+    end
+  end
+
+end
+
+
+class TestConnectValidation < Test::Unit::TestCase
+
+  include ConnectionTestHelper
+
+  def test_too_short_id
+    local_error_on_connect_with "aa", "bcdefg"
+  end
+  def test_empty_id
+    local_error_on_connect_with "", "bcdefg"
+  end
+  def test_garbage_id
+    local_error_on_connect_with "ab,", "cdefg"
+    local_error_on_connect_with "!ab", "cdefg"
+    local_error_on_connect_with "--asdf--", "cdefg"
+    local_error_on_connect_with "\n", "cdefg"
+    local_error_on_connect_with "-=[Ment0r]=-,", "cdefg"
+  end
+  def test_newline_in_secret
+    local_error_on_connect_with "abc", "\n"
+    local_error_on_connect_with "abc", "\n\n asdf \n\n"
+    local_error_on_connect_with '!@#$', "\n"
+  end
+  def test_too_long_id
+    local_error_on_connect_with "a" * 17, "bcdefg"
+  end
+  def test_very_long_id
+    local_error_on_connect_with "a" * 1024, "bcdefg"
+  end
+  def test_too_long_secret
+    local_error_on_connect_with "aaa", "a" * 256
+  end
+  def test_very_long_secret
+    local_error_on_connect_with "aaa", random_string(1024)
+  end
+
+end
+
+
+class TestConnectHappyPath < Test::Unit::TestCase
+
+  include ConnectionTestHelper
 
   def test_simplest_valid_case
     connect_with "abc", ""
@@ -122,6 +150,13 @@ class TestConnect < Test::Unit::TestCase
     connect_with "aA1.aA1.aA1.aA1.", secret
   end
 
+end
+
+
+class TestConnectSadPath < Test::Unit::TestCase
+
+  include ConnectionTestHelper
+
   def test_server_unreachable
     assert_raise ServerNotFound do
       connect :host => "10.255.249.127", :fake_server => false
@@ -141,16 +176,6 @@ class TestConnect < Test::Unit::TestCase
     end
   end
 
-  def ensure_server_fatal message, &block
-    assert_raise ServerFatal do
-      begin
-        connect :server_response => "fatal #{message}"
-      rescue ServerFatal => e
-        assert_match message, e.to_s
-        raise e
-      end
-    end
-  end
   def test_wrong_protocol_version
     ensure_server_fatal "Wrong protocol version\n"
   end
