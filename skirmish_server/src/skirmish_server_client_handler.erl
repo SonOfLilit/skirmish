@@ -48,9 +48,9 @@ start({IP, Port}, Msg) ->
 %%--------------------------------------------------------------------
 init({Addr = {IP, Port}, Msg}) ->
     {ok, Socket} = gen_udp:open(0, [list, {active,true}]),
-    error_logger:info_msg("~p sent ~p", [Addr, Msg]),
+%    error_logger:info_msg("received ~p from ~p", [Msg, Addr]),
     Resp = response_to_handshake(Msg),
-    error_logger:info_msg("responding ~p", [Resp]),
+%    error_logger:info_msg("responding ~p", [Resp]),
     ok = gen_udp:send(Socket, IP, Port, Resp),
     {ok, state_name, #state{ip=IP, port=Port, socket=Socket}}.
 
@@ -122,7 +122,7 @@ match_exactly(S1, S2) when is_list(S1), is_list(S2) ->
 	    ok
     end.
 
-match_rest_of_line(Buffer) ->
+get_rest_of_line(Buffer) ->
     case lists:splitwith(fun is_not_newline/1, Buffer) of
 	{Value, [?NEWLINE | Rest]} ->
 	    {Value, Rest};
@@ -134,24 +134,26 @@ is_not_newline(C) ->
     C /= ?NEWLINE.
 
 match_line(Message, FieldName) ->
-    match_rest_of_line(match(Message, FieldName)).
+    get_rest_of_line(match(Message, FieldName)).
+
+match_single_newline(String) ->
+    case catch(?NL = String) of
+	?NL -> ok;
+	_Else -> throw(parse_error)
+    end.
 
 parse_handshake(Handshake) ->
     catch(do_parse_handshake(Handshake)).
 
 do_parse_handshake(Handshake) ->
     {Version, Rest1} = match_line(Handshake, "version "),
-    try
-	match_exactly(?PROTOCOL_VERSION_STR, Version)
-    catch
-	parse_error ->
-	    throw(wrong_protocol_version)
+    try	match_exactly(?PROTOCOL_VERSION_STR, Version)
+    catch parse_error -> throw(wrong_protocol_version)
     end,
 
     {Id, Rest2} = match_line(Rest1, "id "),
     {Secret, Rest3} = match_line(Rest2, "secret "),
-
-    {[], []} = match_line(Rest3, ""),
+    match_single_newline(Rest3),
 
     validate_id(Id, Secret).
 

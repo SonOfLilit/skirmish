@@ -16,22 +16,22 @@ module Skirmish
 
     TIMEOUT=5
 
-    def initialize host, port, id, secret
+    def initialize(host, port, id, secret)
       @buffer = ''
 
       validate_id id
       validate_secret secret
 
       begin
-        connect host, port
-        send "version #{PROTOCOL_VERSION}\nid #{id}\nsecret #{secret}\n\n"
-        read_ok_or_fatal
-      rescue NetworkTimeout, Errno::ECONNREFUSED, Errno::EHOSTUNREACH
-        raise ServerNotFound
+        bind(host, port)
+        send_header(id, secret)
+        read_ok_or_fatal() # should this not to be rescued the same?
+      rescue NetworkTimeout, Errno::ECONNREFUSED, Errno::EHOSTUNREACH => ex
+        raise ServerNotFound, ex
       end
     end
 
-    def validate_id id
+    def validate_id(id)
       raise ArgumentError, "id too short" unless id.length >= 3
       raise ArgumentError, "id too long" unless id.length <= 16
       unless id =~ /^[0-9a-zA-Z.]*$/
@@ -39,21 +39,28 @@ module Skirmish
       end
     end
 
-    def validate_secret secret
+    def validate_secret(secret)
       raise ArgumentError, "Secret too long - keep at 255 characters" if secret.length > 255
       raise ArgumentError, "Secret may not contain newlines" if secret.index("\n")
     end
 
-    def connect host, port
-      @socket = UDPSocket.new
-      @socket.connect host, port
+    # currently does almost nothing, all the work is done in send_header
+    def bind(host, port)
+      @socket = UDPSocket.new()
+      @socket.bind("", 0)
+      @host = host
+      @port = port
     end
 
-    def send string
-      @socket.write string
+    def send_header(id, secret)
+      send("version #{PROTOCOL_VERSION}\nid #{id}\nsecret #{secret}\n\n")
     end
 
-    def read_message_blocking timeout=TIMEOUT
+    def send(data)
+      @socket.send(data, 0, @host, @port)
+    end
+
+    def read_message_blocking(timeout=TIMEOUT)
       begin
         Timeout::timeout(timeout) do
           pair = nil
@@ -76,7 +83,7 @@ module Skirmish
       end
     end
 
-    def read_ok_or_fatal
+    def read_ok_or_fatal()
       message = read_message_blocking
       return if message.eql? "ok\n\n"
 

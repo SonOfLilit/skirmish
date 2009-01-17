@@ -4,30 +4,38 @@ require 'automation'
 class ConnectionTests < Skirmish::SystemTest
 
   def setup
-    start_server
+    assert_nothing_raised "error in setup, might be because of previous test and might affect later tests" do
+      start_server
+    end
   end
 
   def teardown
-    stop_client
-    stop_server
+    assert_nothing_raised "error in teardown, might affect later tests" do
+      stop_client if client_active?
+      stop_server
+    end
   end
 
   def test_happy_path
-    start_client "asd", ""
+    assert_nothing_raised do
+      start_client "asd", ""
+    end
   end
 
   def test_boundaries
-    start_client "1234567890.a`AbBcC", "A very, very, long and contrived passphrase."
+    assert_nothing_raised do
+      start_client "1234567890.aAbB.", "A very, very, long, contrived passphrase."
+    end
   end
 
-  def test_too_long
-    assert_raise ServerFatal do
+  def test_id_too_long
+    assert_raised_message_matches(/id too long/) do
       start_client "a" * 17, ""
     end
   end
 
   def test_wrong_protocol_version
-    assert_raise ServerFatal do
+    assert_raised_message_matches(/different version/) do
       start_client "asd", "" do
         monkey_patch_client_protocol_version_to client_protocol_version - 1
       end
@@ -36,7 +44,7 @@ class ConnectionTests < Skirmish::SystemTest
 
   def test_unreachable_host
     assert_raise HostUnreachable do
-      start_client "asd", "", "otherhost"
+      start_client "asd", "", "10.255.249.127"
     end
   end
   def test_wrong_port

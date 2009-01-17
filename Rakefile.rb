@@ -44,10 +44,10 @@ client_tests = FileList['skirmish-client/test/test_*.rb']
 tests = FileList['test/test_*.rb']
 
 desc "Compile and run tests"
-task :default => [:build, :test]
+task :default => [:build, :test_all]
 
 desc "Compile, run tests and build documentation"
-task :all => [:build, :test, :doc]
+task :all => [:build, :test_all, :doc]
 
 desc "Compile everything"
 task :build => [:build_server, :build_client]
@@ -89,8 +89,11 @@ task :test_server => [:build_server, server_test_log_dir] do
 end
 CLOBBER << server_test_log_dir
 
+desc "Run all tests"
+task :test_all => [:test_client, :test_server, :test]
+
 desc "Run tests"
-Rake::TestTask.new :test => [:test_client, :test_server] do |t|
+Rake::TestTask.new :test do |t|
   t.libs << 'test'
   t.test_files = tests
   t.warning = true

@@ -77,7 +77,7 @@ class TestConnect < Test::Unit::TestCase
 
     connection_thread.join # wait for thread to finish
   ensure
-    @server.close unless @server.closed?
+    @server.close unless @server.nil? or @server.closed?
   end
 
   def connect options
@@ -124,7 +124,7 @@ class TestConnect < Test::Unit::TestCase
 
   def test_server_unreachable
     assert_raise ServerNotFound do
-      connect :host => "10.255.0.127", :fake_server => false
+      connect :host => "10.255.249.127", :fake_server => false
     end
   end
   def test_not_server
