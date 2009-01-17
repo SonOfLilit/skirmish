@@ -85,6 +85,12 @@ module ConnectionTestHelper
     end
   end
 
+  def garbage_server_response response
+    assert_raise NetworkProtocolError do
+      connect :server_response => response
+    end
+  end
+
 end
 
 
@@ -162,7 +168,7 @@ class TestConnectSadPath < Test::Unit::TestCase
       connect :host => "10.255.249.127", :fake_server => false
     end
   end
-  def test_not_server
+  def test_no_server
     assert_raise ServerNotFound do
       connect :fake_server => false
     end
@@ -188,7 +194,17 @@ class TestConnectSadPath < Test::Unit::TestCase
   def test_wrong_protocol_version_too_long_message
     ensure_server_fatal random_string(4096)
   end
+
   def test_server_full
     ensure_server_fatal "Server full."
   end
+
+  def test_garbage_server_response
+    garbage_server_response "garbage"
+    garbage_server_response "fatale"
+    garbage_server_response "ok\n"
+    garbage_server_response "\nok\n\n"
+    garbage_server_response "ok\n\n\n"
+  end
+
 end
