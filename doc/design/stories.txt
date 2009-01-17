@@ -1,6 +1,11 @@
 Story 0: Connection
 Client connects to server, sends identifier, server accepts iff same protocol version
-Assigned aur.saraf
+Assigned aursaraf
 Estimated 3h
-Begun 09:40
-Real xh
+Real So long it is irrelevant. Took a good four days of work.
+
+Story 1: Trivial game negotiation
+Client requests game, server sends world parameters
+Assigned aursaraf
+Estimated 1h
+Started 12:15

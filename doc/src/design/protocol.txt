@@ -18,10 +18,10 @@ Responses
 In general:
 
 * "ok\n\n" is an ACK - it is sent to signify that a message was received
-and everything is OK
+  and everything is OK
 * "fatal <string>" reports an error that requires the server to
-disconnect the client, and is followed by disconnecting. The string
-may be up to 1KiB long and may contain any character.
+  disconnect the client, and is followed by disconnecting. The string
+  may be up to 1KiB long and may contain any character.
 * Every message is contained in one UDP packet with a body of no more
   than 8192 bytes
 
@@ -65,3 +65,18 @@ sessions. However, any UDP protocol not preceded by establishment of a
 shared secret by encrypted TCP that is later used to generate a
 sequence of packet IDs is totally insecure. Eventually such a protocol
 will be implemented. In the meantime, we live with insecurity.
+
+Client sends
+
+---------
+game\n
+\n
+---------
+
+Server responds
+
+---------
+world-corner <long>,<long>\n
+world-size <long>,<long>\n
+\n
+---------
