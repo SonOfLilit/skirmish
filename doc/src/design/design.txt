@@ -49,7 +49,9 @@ should completely specify the behaviour of a unit of code. That means:
 High Level Design
 -----------------
 
-.Control Flow
+Control Flow
+~~~~~~~~~~~~
+
 - A skirmish server is set up to listen for connections
 - A skirmish client connects to the server
 - A game-selection protocol is played out (at this stage, it is a
@@ -65,6 +67,44 @@ High Level Design
    unit location and direction
  * The client may send the server method calls on unit AI modules and
    new AI assignments for units
+
+Game World
+~~~~~~~~~~
+
+The game world is a rectangle in the (unsigned long integer)^2 space,
+i.e. within the square (0, 0, 4294967296, 4294967296).
+
+.Rationale
+************************************************
+Considering the alternatives:
+
+Float coordinates::
+
+  Hundreds of percents of CPU and network bandwidth increase in
+  exchange for totally unneeded flexibility - and imprecision, too.
+
+Short int coordinates::
+
+  Assuming most player armies will occupy
+  approximately a screenful, and assuming a screenful is around
+  1024x1024, 65536/1024 = 64, this means the largest possible world
+  can accomodate up to 64x64 = 4096 players. That is definitely not
+  enough.
+
+Long int coordinates in the server and Short int in the client::
+
+  Nobody cares about the client performance gain, and the same - or
+  more - network traffic volume saving can be gained 'later', 'if
+  needed', by introducing a protocol compressor - without changing any
+  other part of the system, and without all the bugs and testing
+  headaches of different coordinate systems on the client and server,
+  'now'.
+
+************************************************
+
+Terrain will be dealt with later, some way or another. Currently there
+is only one type of terrain - "ground" - and no need to communicate
+it.
 
 
 Client-Server Protocol
