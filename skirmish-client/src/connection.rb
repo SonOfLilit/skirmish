@@ -55,6 +55,10 @@ module Skirmish
       end
     end
 
+    def request_game()
+      send("game\n\n")
+    end
+
     def validate_id(id)
       raise ArgumentError, "id too short" unless id.length >= 3
       raise ArgumentError, "id too long" unless id.length <= 16

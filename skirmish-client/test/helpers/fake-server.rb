@@ -45,7 +45,7 @@ class FakeServer
           read
         end
       rescue Timeout::Error
-        flunk "Timeout waiting for message '#{string}' (buffer: '#{@buffer}')"
+        flunk "Timeout awaiting message #{string.inspect} (buffer: '#{@buffer}')"
       end
     end
 

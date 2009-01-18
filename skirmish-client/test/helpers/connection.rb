@@ -1,8 +1,8 @@
 require 'test/unit/assertions'
 require 'thread'
-require 'fake-server'
-here = File.dirname(__FILE__)
-require File.expand_path(File.join(here, '../../src/connection'))
+here = File.expand_path(File.dirname(__FILE__))
+require File.join(here, 'fake-server')
+require File.join(here, '../../src/connection')
 
 
 module ConnectionTestHelper
@@ -14,9 +14,10 @@ module ConnectionTestHelper
   end
 
   def local_error_on_connect_with id, secret
-    assert_raise ArgumentError, "Connect did not fail on illegal identifiers " \
-    "#{id.inspect}, #{secret.inspect}" do
-      Connection.new "localhost", Connection::DEFAULT_PORT, id, secret
+    assert_raise ArgumentError,
+        "Connect did not fail on illegal identifiers " \
+        "#{id.inspect}, #{secret.inspect}" do
+      connection_new(apply_defaults :id => id, :secret => secret)
     end
   end
 
@@ -24,21 +25,41 @@ module ConnectionTestHelper
     Connection.new options[:host], options[:port], options[:id], options[:secret]
   end
 
-  def connect options
-    default_port = Connection::DEFAULT_PORT
-    options[:id] ||= "abc"
-    options[:secret] ||= "defg"
-    options[:host] ||= "localhost"
-    options[:port] ||= default_port
-    options[:server_port] ||= default_port
-    options[:fake_server] = true unless options.has_key? :fake_server
-    options[:server_response] = "ok\n\n" unless options.has_key? :server_response
+  def do_request_game connection, options
+    connection.request_game
+  end
 
+  def connect options
+    apply_defaults options
     if options[:fake_server]
       connect_with_fake_server options
     else
       connection_new options
     end
+  end
+
+  def request_game options={}
+    options[:request_game] = true
+    unless options.has_key? :request_game_response
+      options[:request_game_response] =
+        "world-corner 0,0\n" \
+        "world-size 3000,3000\n" \
+        "\n"
+    end
+    connect options
+  end
+
+  def apply_defaults options
+    options[:id] ||= "abc"
+    options[:secret] ||= "defg"
+    options[:host] ||= "localhost"
+    default_port = Connection::DEFAULT_PORT
+    options[:port] ||= default_port
+    options[:server_port] ||= default_port
+    options[:fake_server] = true unless options.has_key? :fake_server
+    options[:server_response] = "ok\n\n" unless options.has_key? :server_response
+    options[:request_game] ||= false
+    options
   end
 
   def connect_with id, secret, options={}
@@ -52,7 +73,8 @@ module ConnectionTestHelper
     parent = Thread.current
     thread = Thread.new do
       begin
-        connection_new options
+        conn = connection_new options
+        do_request_game conn, options if options[:request_game]
       rescue Object => e
         parent.raise e
       end
@@ -70,10 +92,15 @@ module ConnectionTestHelper
                    "secret #{options[:secret]}\n" \
                    "\n"
     @server.send options[:server_response] if options[:server_response]
+    if options[:request_game]
+      @server.expect "game\n" \
+                     "\n"
+      @server.send options[:request_game_response]
+    end
 
     connection_thread.join # wait for thread to finish
   ensure
-    @server.close unless @server.nil? or @server.closed?
+    @server.close unless @server.nil? or @server.closed? or options[:keep_server]
   end
 
   def ensure_server_fatal message, &block
