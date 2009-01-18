@@ -28,7 +28,8 @@ run_test = '/usr/local/lib/erlang/lib/common_test-*/priv/bin/run_test'
 #   * priv
 #   * ebin
 #  * tests (system-level acceptance tests)
-#   * 'automation.rb'
+#   * automation
+#    * '*.rb*
 #   * 'test_<storyname>.rb'
 #  * doc
 #   * src
@@ -68,6 +69,13 @@ Rake::TestTask.new :test_client => [:build_client] do |t|
   t.warning = true
 end
 
+Rake::RDocTask.new :client_devel_docs do |rd|
+  rd.rdoc_dir = 'doc/client-devel'
+  rd.main = 'Skirmish::Client'
+  rd.rdoc_files.include('skirmish-client/src/**.rb')
+  rd.options << '--inline-source' << '--all'
+end
+
 desc "Build server"
 task :build_server => "skirmish_server/ebin/skirmish_server.app" do
   cd 'skirmish_server'
@@ -100,7 +108,7 @@ Rake::TestTask.new :test do |t|
 end
 
 desc "Build documentation"
-task :doc => [:design_docs, :automation_docs, :test_docs]
+task :doc => [:design_docs, :client_devel_docs, :automation_docs, :test_docs]
 
 desc "Build design documents"
 task :design_docs => ['design', 'protocol'].map {|n| "doc/design/#{n}.html" }
@@ -118,10 +126,12 @@ CLOBBER << Dir['doc/design/*.html']
 Rake::RDocTask.new :automation_docs do |rd|
   rd.rdoc_dir = 'doc/automation'
   rd.main = 'Skirmish::Automation'
-  rd.rdoc_files.include('test/automation.rb')
+  rd.rdoc_files.include('test/automation/*.rb')
+  rd.options << '--inline-source'
 end
 
 Rake::RDocTask.new :test_docs do |rd|
   rd.rdoc_dir = 'doc/test'
   rd.rdoc_files.include(tests)
+  rd.options << '--inline-source'
 end

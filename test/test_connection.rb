@@ -1,19 +1,15 @@
 require 'automation'
 
-# Tests for story 0: Connection
-class ConnectionTests < Skirmish::SystemTest
+# Story 0: Connection
+class ConnectionAcceptance < Skirmish::SystemTest
 
   def setup
-    assert_nothing_raised "error in setup, might be because of previous test and might affect later tests" do
-      start_server
-    end
+    start_server
   end
 
   def teardown
-    assert_nothing_raised "error in teardown, might affect later tests" do
-      stop_client if client_active?
-      stop_server
-    end
+    stop_client if client_active?
+    stop_server
   end
 
   def test_happy_path

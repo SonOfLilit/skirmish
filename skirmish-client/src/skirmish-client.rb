@@ -4,6 +4,12 @@ require 'connection'
 
 module Skirmish
 
+  #
+  # Placeholder for documentation purposes.
+  #
+  class Main
+  end
+
   class ConsoleCommands
     def connect(host, port, id, secret)
       @connection = Connection.new(host, port, id, secret)
