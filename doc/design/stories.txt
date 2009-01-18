@@ -9,3 +9,4 @@ Client requests game, server sends world parameters
 Assigned aursaraf
 Estimated 1h
 Started 12:15
+Paused 12:30 (refactor, work on documentation, go to sleep)

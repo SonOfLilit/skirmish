@@ -102,6 +102,8 @@ Long int coordinates in the server and Short int in the client::
 
 ************************************************
 
+By default, game worlds are from (0,0) to (2999, 2999).
+
 Terrain will be dealt with later, some way or another. Currently there
 is only one type of terrain - "ground" - and no need to communicate
 it.
@@ -167,7 +169,7 @@ User Interface consisting of a Ruby REPL. This TUI will remain into
 release (it is essential to system-level testability) but will become
 optional, with a GUI as the default.
 
-From the moment the game starts, the main interface will be Graphical
+From the moment the game starts, the main interface will be graphical
 (Cairo-based), with the console remaining in another window only if it
 was requested (a `--console` command line option will handle that).
 
