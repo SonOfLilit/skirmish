@@ -24,6 +24,29 @@ module ConnectionTestHelper
     Connection.new options[:host], options[:port], options[:id], options[:secret]
   end
 
+  def connect options
+    default_port = Connection::DEFAULT_PORT
+    options[:id] ||= "abc"
+    options[:secret] ||= "defg"
+    options[:host] ||= "localhost"
+    options[:port] ||= default_port
+    options[:server_port] ||= default_port
+    options[:fake_server] = true unless options.has_key? :fake_server
+    options[:server_response] = "ok\n\n" unless options.has_key? :server_response
+
+    if options[:fake_server]
+      connect_with_fake_server options
+    else
+      connection_new options
+    end
+  end
+
+  def connect_with id, secret, options={}
+    options[:id] = id
+    options[:secret] = secret
+    connect options
+  end
+
   def connect_in_other_thread options
     Thread.abort_on_exception = true # otherwise t.raise doesn't work TODO ask why
     parent = Thread.current
@@ -51,29 +74,6 @@ module ConnectionTestHelper
     connection_thread.join # wait for thread to finish
   ensure
     @server.close unless @server.nil? or @server.closed?
-  end
-
-  def connect options
-    default_port = Connection::DEFAULT_PORT
-    options[:id] ||= "abc"
-    options[:secret] ||= "defg"
-    options[:host] ||= "localhost"
-    options[:port] ||= default_port
-    options[:server_port] ||= default_port
-    options[:fake_server] = true unless options.has_key? :fake_server
-    options[:server_response] = "ok\n\n" unless options.has_key? :server_response
-
-    if options[:fake_server]
-      connect_with_fake_server options
-    else
-      connection_new options
-    end
-  end
-
-  def connect_with id, secret, options={}
-    options[:id] = id
-    options[:secret] = secret
-    connect options
   end
 
   def ensure_server_fatal message, &block
