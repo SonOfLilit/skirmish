@@ -74,6 +74,7 @@ Rake::RDocTask.new :client_devel_docs do |rd|
   rd.main = 'Skirmish::Client'
   rd.rdoc_files.include('skirmish-client/src/**.rb')
   rd.options << '--inline-source' << '--all'
+  rd.template = "extras/flipbook.rb"
 end
 
 desc "Build server"
@@ -128,10 +129,12 @@ Rake::RDocTask.new :automation_docs do |rd|
   rd.main = 'Skirmish::Automation'
   rd.rdoc_files.include('test/automation/*.rb')
   rd.options << '--inline-source'
+  rd.template = "extras/flipbook.rb"
 end
 
 Rake::RDocTask.new :test_docs do |rd|
   rd.rdoc_dir = 'doc/test'
   rd.rdoc_files.include(tests)
   rd.options << '--inline-source'
+  rd.template = "extras/flipbook.rb"
 end
