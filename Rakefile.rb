@@ -77,9 +77,9 @@ end
 #
 # rake test:connect:secret
 # => Runs the tests matching /secret/ in the TestConnect unit test suite
-rule "" do |t|
+rule /^test_client:/ do |t|
   # test:file:method
-  if /test:(.*)(:([^.]+))?$/.match(t.name)
+  if /^test_client:(.*)(:([^.]+))?$/.match(t.name)
     arguments = t.name.split(":")[1..-1]
     file_name = arguments.first
     test_name = arguments[1..-1]
