@@ -1,5 +1,5 @@
 require 'test/unit'
-require 'automation'
+require 'automation/automation'
 
 module Skirmish
 
@@ -9,7 +9,8 @@ module Skirmish
   #
   # TODO: prevent Test::Unit invocation whenever Automation is used
   class SystemTest < Test::Unit::TestCase
-    include Skirmish::Automation
+
+    include Automation
 
     # monkey patch to prevent test/unit from thinking this is a test suite
     def self.suite # :nodoc:

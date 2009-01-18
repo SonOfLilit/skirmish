@@ -1,1 +1,1 @@
-require 'automation/automation'
+require 'automation/systemtest'

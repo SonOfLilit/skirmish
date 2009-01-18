@@ -4,7 +4,7 @@ require 'rake/testtask'
 require 'rake/rdoctask'
 
 # erlang common_test run_test script
-run_test = '/usr/local/lib/erlang/lib/common_test-*/priv/bin/run_test'
+run_test = *Dir['/usr/local/lib/erlang/lib/common_test-*/priv/bin/run_test']
 
 # === Project map
 # * skirmish
@@ -41,7 +41,8 @@ CLOBBER << Dir["**/.DS_Store"]
 CLOBBER << Dir["**/erl_crash.dump"]
 
 skirmish_client = 'skirmish-client/bin/skirmish-client'
-client_tests = FileList['skirmish-client/test/test_*.rb']
+client_tests = FileList['skirmish-client/test/test_*.rb'].
+  exclude("skirmish-client/test/test_*_*.rb")
 tests = FileList['test/test_*.rb']
 
 desc "Compile and run tests"
@@ -67,6 +68,29 @@ Rake::TestTask.new :test_client => [:build_client] do |t|
   t.libs << 'skirmish-client/test'
   t.test_files = client_tests
   t.warning = true
+end
+
+# Run specific tests or test files
+#
+# rake test_client:connect_validation
+# => Runs the full TestConnectValidation unit test suite
+#
+# rake test:connect:secret
+# => Runs the tests matching /secret/ in the TestConnect unit test suite
+rule "" do |t|
+  # test:file:method
+  if /test:(.*)(:([^.]+))?$/.match(t.name)
+    arguments = t.name.split(":")[1..-1]
+    file_name = arguments.first
+    test_name = arguments[1..-1]
+
+    if File.exist?("skirmish-test/test_#{file_name}.rb")
+      run_file_name = "test_#{file_name}.rb"
+    end
+
+    lib = 'skirmish-client/test'
+    sh "ruby -Ilib:#{lib} #{lib}/#{run_file_name} -n /#{test_name}/"
+  end
 end
 
 Rake::RDocTask.new :client_devel_docs do |rd|

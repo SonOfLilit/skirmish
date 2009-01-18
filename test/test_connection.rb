@@ -9,6 +9,7 @@ class ConnectionAcceptance < Skirmish::SystemTest
 
   def teardown
     stop_client if client_active?
+  ensure
     stop_server
   end
 

@@ -3,11 +3,35 @@ require 'timeout'
 
 module Skirmish
 
-  class NetworkTimeout < Exception; end # TODO: #to_s
-  class NetworkProtocolError < Exception; end # TODO: #to_s
-  class ServerNotFound < Exception; end # TODO: #to_s
-  class ServerFatal < Exception; end # TODO: #to_s
+  # Thrown when server takes too long to respond
+  class NetworkTimeout < ScriptError; end # TODO: #to_s
+  # Thrown on an error parsing server response
+  class NetworkProtocolError < ScriptError; end # TODO: #to_s
+  # Thrown when the given host/port cannot be reached
+  class ServerNotFound < ScriptError; end # TODO: #to_s
+  # Thrown when the server reports a fatal error
+  class ServerFatal < ScriptError
+    def initialize message
+      @message = message
+    end
 
+    def to_s
+      "Server fatal error: #{@message}"
+    end
+  end
+
+  #
+  # Manages a connection to the server
+  #
+  # === Example
+  #
+  #     require 'connection.rb'
+  #
+  #     conn = Skirmish::Connection.new(server_host,
+  #                                     Skirmish::Connection::DEFAULT_PORT,
+  #                                     "my.id", "my secret code!")
+  #     game = conn.request_game()
+  #
   class Connection
 
     PROTOCOL_VERSION = 0 # TODO: DRY here and in server
@@ -25,7 +49,7 @@ module Skirmish
       begin
         bind(host, port)
         send_header(id, secret)
-        read_ok_or_fatal() # should this not to be rescued the same?
+        read_ok_or_fatal()
       rescue NetworkTimeout, Errno::ECONNREFUSED, Errno::EHOSTUNREACH => ex
         raise ServerNotFound, ex
       end

@@ -14,7 +14,7 @@ class GameNegotiationAcceptance < Skirmish::SystemTest
   end
 
   def test_simplest_case
-    client_start_game
+    start_game
     assert_equal [0, 0, 2999, 2999], client_world_rectangle
   end
   def test_non_square
@@ -37,7 +37,7 @@ class GameNegotiationAcceptance < Skirmish::SystemTest
 
   def configure_server_start_game options
     server_configure_game options
-    client_start_game
+    start_game
     corner_x, corner_y = options[:corner]
     width, height = options[:size]
     world = client_world_rectangle
