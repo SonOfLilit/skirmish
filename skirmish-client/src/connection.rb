@@ -59,8 +59,10 @@ module Skirmish
 
     def request_game()
       send("game\n\n")
-
-      return GameWorld.new([0, 0, 3000, 3000])
+      message = read_message_blocking()
+      rect = message.match(/^world-corner (\d*),(\d*)\nworld-size (\d*),(\d*)\n\n$/).captures.map{|s| s.to_i}
+      2.times{|i| rect[i+2] += rect[i] - 1} # [*corner,*size]->[*corner,*corner]
+      return GameWorld.new(rect)
     end
 
     def validate_id(id)
