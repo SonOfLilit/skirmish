@@ -17,6 +17,8 @@ The process for developing a feature is:
 . Loop until acceptance tests pass:
  .. Unit test is written and seen to fail
  .. Code is written until unit test passes
+. All code related to feature is reviewed, refactored as needed,
+  documentation is ensured to be complete
 . stories.txt is updated with real time taken
 
 Acceptance tests are system-level tests (i.e. they never use
@@ -44,6 +46,28 @@ should completely specify the behaviour of a unit of code. That means:
 * *All* acceptable use cases
 * *All* boundary conditions, from within and from without
 * *All* illegal inputs, states, etc' that the code is expected to handle
+
+A feature is 'not' complete before the code is readable and
+well-documented.
+
+.Rationale
+**********************************************************************
+Two years from now, I will read this code and want to add a
+feature. When that happens, I do not want to suffer a wave of
+self-hate.
+
+It is worth the effort, as that situation will certainly happen over
+and over again - not to mention new developers tackling the project.
+
+Five years from now, I might decide to add multiplayer support. Much
+of the code will need to change in subtle ways. Nothing is more prone
+to introduce bugs than subtle changes in the code. Unless a full test
+suite can guarantee to catch virtually all of them, there will be no
+choice but a complete rewrite - and that could 'not' be
+afforded. Better pay the price in development efficiency now than
+throw everything out the window the moment a feature that changes the
+design is needed.
+**********************************************************************
 
 
 High Level Design
@@ -75,7 +99,7 @@ The game world is a rectangle in the (unsigned long integer)^2 space,
 i.e. within the square (0, 0, 4294967296, 4294967296).
 
 .Rationale
-************************************************
+**********************************************************************
 Considering the alternatives:
 
 Float coordinates::
@@ -99,8 +123,7 @@ Long int coordinates in the server and Short int in the client::
   other part of the system, and without all the bugs and testing
   headaches of different coordinate systems on the client and server,
   'now'.
-
-************************************************
+**********************************************************************
 
 By default, game worlds are from (0,0) to (2999, 2999).
 
