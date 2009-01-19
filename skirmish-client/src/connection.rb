@@ -1,6 +1,9 @@
 require 'socket'
 require 'timeout'
 
+require 'game-world'
+
+
 module Skirmish
 
   # Thrown when server takes too long to respond
@@ -38,9 +41,8 @@ module Skirmish
     # in honor of my friends, FIRST Robotics Competition team #1657 HAMOSSAD
     DEFAULT_PORT = 1657
 
-    TIMEOUT=5
-
-    def initialize(host, port, id, secret)
+    def initialize(host, port, id, secret, timeout=5)
+      @timeout = timeout
       @buffer = ''
 
       validate_id id
@@ -57,6 +59,8 @@ module Skirmish
 
     def request_game()
       send("game\n\n")
+
+      return GameWorld.new([0, 0, 3000, 3000])
     end
 
     def validate_id(id)
@@ -88,9 +92,9 @@ module Skirmish
       @socket.send(data, 0, @host, @port)
     end
 
-    def read_message_blocking(timeout=TIMEOUT)
+    def read_message_blocking()
       begin
-        Timeout::timeout(timeout) do
+        Timeout::timeout(@timeout) do
           pair = nil
           begin
             # TODO: fix BUG: the kind of socket used here throws away

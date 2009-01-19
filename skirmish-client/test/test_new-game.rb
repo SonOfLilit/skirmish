@@ -1,12 +1,11 @@
 require 'test/unit'
 
-require 'helpers/connection'
+require 'helpers/request-game'
 
-Case = Test::Unit::TestCase
 
-class TestNewGame < Case
+class TestNewGame < Test::Unit::TestCase
 
-  include ConnectionTestHelper
+  include RequestGameTestHelper
 
   def test_simple_case
     request_game

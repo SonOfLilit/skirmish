@@ -1,4 +1,4 @@
-require 'test/unit/testcase'
+require 'test/unit'
 
 require 'helpers/connection'
 
@@ -36,7 +36,7 @@ class TestConnectErrors < Test::Unit::TestCase
   end
   def test_wrong_port
     assert_raise ServerNotFound do
-      connect :port => 88899
+      connect :port => 88899, :ignore_server_errors => true
     end
   end
 
@@ -63,6 +63,7 @@ class TestConnectErrors < Test::Unit::TestCase
     garbage_server_response "ok\n"
     garbage_server_response "\nok\n\n"
     garbage_server_response "ok\n\n\n"
+    garbage_server_response "world-corner 0,0\nworld-size 3000,3000\n\n"
   end
 
 end
