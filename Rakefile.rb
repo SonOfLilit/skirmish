@@ -65,7 +65,7 @@ CLOBBER << skirmish_client
 
 desc "Run client tests"
 Rake::TestTask.new :test_client => [:build_client] do |t|
-  t.libs << 'skirmish-client/test'
+  t.libs = ['skirmish-client/test', 'skirmish-client/src']
   t.test_files = client_tests
   t.warning = true
 end
@@ -84,12 +84,15 @@ rule /^test_client:/ do |t|
     file_name = arguments.first
     test_name = arguments[1..-1]
 
-    if File.exist?("skirmish-test/test_#{file_name}.rb")
+    test = 'skirmish-client/test'
+    if File.exist?("#{test}/test_#{file_name}.rb")
       run_file_name = "test_#{file_name}.rb"
+    else
+      raise ScriptError, "No suite named #{file_name}"
     end
 
-    lib = 'skirmish-client/test'
-    sh "ruby -Ilib:#{lib} #{lib}/#{run_file_name} -n /#{test_name}/"
+    src = 'skirmish-client/src'
+    sh "ruby -I#{src}:#{test} #{test}/#{run_file_name} -n /#{test_name}/"
   end
 end
 
