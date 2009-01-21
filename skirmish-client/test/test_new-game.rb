@@ -44,14 +44,13 @@ class TestNewGame < Test::Unit::TestCase
      response(3000, 3000, "", 3000),
      response(3000, 3000, 3000, ""),
      # negative numbers
-     "world-corner 0,0\n" \
-     "world-size 100,-1\n" \
-     "\n",
+     response(-1, 0, 3000, 3000),
+     response(0, 0, -3000, 3000),
      # missing last newline
-     "world-corner 0,0\n" \
-     "world-size 3000,3000\n",
+     response(-1, 0, 3000, 3000)[0..-2],
      # number too big
-
+     response(2 ** 32, 0, 3000, 3000),
+     response(0, 0, 2 ** 32, 3000)
     ].each do |response|
       assert_raise NetworkProtocolError do
         request_game :request_game_response => response
