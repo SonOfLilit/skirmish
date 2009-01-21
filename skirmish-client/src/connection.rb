@@ -57,12 +57,17 @@ module Skirmish
       end
     end
 
+    REQUEST_RESPONSE_RE = /^world-corner (\d+),(\d+)\nworld-size (\d+),(\d+)\n\n$/
     def request_game()
       send("game\n\n")
       message = read_message_blocking()
-      rect = message.match(/^world-corner (\d*),(\d*)\nworld-size (\d*),(\d*)\n\n$/).captures.map{|s| s.to_i}
-      2.times{|i| rect[i+2] += rect[i] - 1} # [*corner,*size]->[*corner,*corner]
-      return GameWorld.new(rect)
+      match = message.match(REQUEST_RESPONSE_RE)
+      raise NetworkProtocolError unless match and match.captures.length == 4
+      captures = match.captures.map{|s| s.to_i}
+      corner = captures[0..1]
+      size = captures[2..3]
+      world_rect = corner + (0..1).map{|i| corner[i] + size[i] - 1}
+      return GameWorld.new(world_rect)
     end
 
     def validate_id(id)

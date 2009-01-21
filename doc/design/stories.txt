@@ -8,5 +8,4 @@ Story 1: Trivial game negotiation
 Client requests game, server sends world parameters
 Assigned aursaraf
 Estimated 1h
-Started 00:15
-Paused 00:30 (refactor, work on documentation, go to sleep)
+Real Again, a day and not yet done. Mostly due to refactoring of test support code. Will have to separate estimations.
