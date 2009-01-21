@@ -24,18 +24,34 @@ class TestNewGame < Test::Unit::TestCase
     request_game :corner => [1000000, 1000000], :size => [10000, 10000]
   end
 
+  def response(x, y, w, h)
+    "world-corner #{x},#{y}\n" \
+    "world-size #{w},#{h}\n" \
+     "\n"
+  end
+
   def test_parse_errors
-    ["", # nothing
-     "asdf", # garbage
-     "\n\n\n", # newlines
-     "world-corner ,\n" \
-     "world-size ,\n" \
-     "\n", # no numbers
+    [# nothing
+     "",
+     # garbage
+     "asdf",
+     # newlines
+     "\n\n\n",
+     # no numbers
+     response("", "", "", ""),
+     response("", 3000, 3000, 3000),
+     response(3000, "", 3000, 3000),
+     response(3000, 3000, "", 3000),
+     response(3000, 3000, 3000, ""),
+     # negative numbers
      "world-corner 0,0\n" \
      "world-size 100,-1\n" \
-     "\n", # negative numbers
+     "\n",
+     # missing last newline
      "world-corner 0,0\n" \
-     "world-size 3000,3000\n" # missing last newline
+     "world-size 3000,3000\n",
+     # number too big
+
     ].each do |response|
       assert_raise NetworkProtocolError do
         request_game :request_game_response => response
