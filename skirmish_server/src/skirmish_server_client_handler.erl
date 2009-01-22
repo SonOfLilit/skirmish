@@ -19,7 +19,6 @@
 -include("../include/skirmish_server.hrl").
 
 -define(NEWLINE, 10).
--define(NL, [?NEWLINE]).
 
 -record(state, {ip, port, socket}).
 
@@ -81,11 +80,11 @@ response_to_handshake(Handshake) ->
 fatal(Msg) ->
     "fatal " ++ Msg.
 ok() ->
-    "ok" ++ ?NL ++ ?NL.
+    "ok\n\n".
 
 validate_id(Id, Secret) ->
     Valid = lists:all(fun is_valid_id_char/1, Id),
-    NoNewLines = string:str(Secret, ?NL) == 0,
+    NoNewLines = string:str(Secret, "\n") == 0,
     if
 	not(length(Id) >= 3) ->
 	    throw(id_too_short);
@@ -137,8 +136,8 @@ match_line(Message, FieldName) ->
     get_rest_of_line(match(Message, FieldName)).
 
 match_single_newline(String) ->
-    case catch(?NL = String) of
-	?NL -> ok;
+    case catch("\n" = String) of
+	"\n" -> ok;
 	_Else -> throw(parse_error)
     end.
 

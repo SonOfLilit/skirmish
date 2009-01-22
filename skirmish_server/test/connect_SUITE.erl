@@ -14,8 +14,6 @@
 
 -define(DEFAULT_PORT, 1657).
 
--define(NL, [10]).
-
 %%--------------------------------------------------------------------
 %% COMMON TEST CALLBACK FUNCTIONS
 %%--------------------------------------------------------------------
@@ -163,7 +161,7 @@ test_id_garbage(_Config) ->
     fatal_contains(rand(200), "", "").
 
 test_extra_newlines(_Config) ->
-    protocol_error(format_handshake("abc", "def" ++ ?NL)).
+    protocol_error(format_handshake("abc", "def\n")).
 
 %%--------------------------------------------------------------------
 %% Valid cases
@@ -248,7 +246,7 @@ format_handshake(Id, Secret) ->
     format_handshake(Id, Secret, ?PROTOCOL_VERSION).
 
 format_handshake(Id, Secret, Version) ->
-    "version " ++ io_lib:write(Version) ++ ?NL ++
-	"id " ++ Id ++ ?NL ++
-	"secret " ++ Secret ++ ?NL ++
-	?NL.
+    "version " ++ io_lib:write(Version) ++ "\n"
+	"id " ++ Id ++ "\n"
+	"secret " ++ Secret ++ "\n"
+	"\n".
