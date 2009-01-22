@@ -12,8 +12,6 @@
 -include("ct.hrl").
 -include("../include/skirmish_server.hrl").
 
--define(DEFAULT_PORT, 1657).
-
 %%--------------------------------------------------------------------
 %% COMMON TEST CALLBACK FUNCTIONS
 %%--------------------------------------------------------------------
@@ -161,7 +159,7 @@ test_id_garbage(_Config) ->
     fatal_contains(rand(200), "", "").
 
 test_extra_newlines(_Config) ->
-    protocol_error(format_handshake("abc", "def\n")).
+    protocol_error(test_helper:format_handshake("abc", "def\n")).
 
 %%--------------------------------------------------------------------
 %% Valid cases
@@ -192,7 +190,7 @@ test_wrong_protocol_version(_Config) ->
     wrong_protocol_version_with(?PROTOCOL_VERSION + 1).
 
 wrong_protocol_version_with(FakeVersion) ->
-    Handshake = format_handshake("abc", "def", FakeVersion),
+    Handshake = test_helper:format_handshake("abc", "def", FakeVersion),
     fatal_contains(Handshake, "version").
 
 
@@ -211,8 +209,11 @@ protocol_error(Message) ->
     fatal_contains(Message, "Skirmish server").
 
 
+fatal_contains(Id, Secret, Token) ->
+    fatal_contains(test_helper:format_handshake(Id, Secret), Token).
+
 fatal_contains(Message, Token) ->
-    Response = connect(Message),
+    Response = test_helper:connect(Message),
     "fatal " ++ _ = Response,
     true = length(Response) =< 1024,
     case Token of
@@ -222,31 +223,7 @@ fatal_contains(Message, Token) ->
 	    true = string:str(Response, Token) > 0
     end.
 
-fatal_contains(Id, Secret, Token) ->
-    fatal_contains(format_handshake(Id, Secret), Token).
-
 
 success(Id, Secret) -> 
-    "ok" ++ [10, 10] = connect(format_handshake(Id, Secret)).
-
-
-connect(Message) ->
-    {ok, Socket} = gen_udp:open(0, [list,{active, true},{sndbuf,8196}]),
-    {ok, Localhost} = inet:getaddr("localhost", inet),
-    ok = gen_udp:send(Socket, Localhost, ?DEFAULT_PORT, Message),
-    receive
-	{udp, Socket, Host, Port, Response} ->
-	    Response
-    after 1000 ->
-	    throw(timeout)
-    end.
-
-
-format_handshake(Id, Secret) ->
-    format_handshake(Id, Secret, ?PROTOCOL_VERSION).
-
-format_handshake(Id, Secret, Version) ->
-    "version " ++ io_lib:write(Version) ++ "\n"
-	"id " ++ Id ++ "\n"
-	"secret " ++ Secret ++ "\n"
-	"\n".
+    "ok" ++ [10, 10] = test_helper:connect(test_helper:format_handshake(Id,
+									Secret)).
