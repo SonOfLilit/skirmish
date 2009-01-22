@@ -13,8 +13,13 @@
 -export([start/2]).
 
 %% gen_fsm callbacks
--export([init/1, state_name/2, state_name/3, handle_event/3,
-         handle_sync_event/4, handle_info/3, terminate/3, code_change/4]).
+-export([init/1,
+	 connected/2,
+	 handle_event/3,
+         handle_sync_event/4,
+	 handle_info/3,
+	 terminate/3,
+	 code_change/4]).
 
 -include("../include/skirmish_server.hrl").
 
@@ -47,11 +52,9 @@ start({IP, Port}, Msg) ->
 %%--------------------------------------------------------------------
 init({Addr = {IP, Port}, Msg}) ->
     {ok, Socket} = gen_udp:open(0, [list, {active,true}]),
-%    error_logger:info_msg("received ~p from ~p", [Msg, Addr]),
     Resp = response_to_handshake(Msg),
-%    error_logger:info_msg("responding ~p", [Resp]),
     ok = gen_udp:send(Socket, IP, Port, Resp),
-    {ok, state_name, #state{ip=IP, port=Port, socket=Socket}}.
+    {ok, connected, #state{ip=IP, port=Port, socket=Socket}}.
 
 response_to_handshake(Handshake) ->
     case parse_handshake(Handshake) of
@@ -156,39 +159,15 @@ do_parse_handshake(Handshake) ->
 
     validate_id(Id, Secret).
 
-%%--------------------------------------------------------------------
-%% Function: 
-%% state_name(Event, State) -> {next_state, NextStateName, NextState}|
-%%                             {next_state, NextStateName, 
-%%                                NextState, Timeout} |
-%%                             {stop, Reason, NewState}
-%% Description:There should be one instance of this function for each possible
-%% state name. Whenever a gen_fsm receives an event sent using
-%% gen_fsm:send_event/2, the instance of this function with the same name as
-%% the current state name StateName is called to handle the event. It is also 
-%% called if a timeout occurs. 
-%%--------------------------------------------------------------------
-state_name(_Event, State) ->
-    {next_state, state_name, State}.
 
 %%--------------------------------------------------------------------
-%% Function:
-%% state_name(Event, From, State) -> {next_state, NextStateName, NextState} |
-%%                                   {next_state, NextStateName, 
-%%                                     NextState, Timeout} |
-%%                                   {reply, Reply, NextStateName, NextState}|
-%%                                   {reply, Reply, NextStateName, 
-%%                                    NextState, Timeout} |
-%%                                   {stop, Reason, NewState}|
-%%                                   {stop, Reason, Reply, NewState}
-%% Description: There should be one instance of this function for each
-%% possible state name. Whenever a gen_fsm receives an event sent using
-%% gen_fsm:sync_send_event/2,3, the instance of this function with the same
-%% name as the current state name StateName is called to handle the event.
+%% State handler functions
 %%--------------------------------------------------------------------
-state_name(_Event, _From, State) ->
-    Reply = ok,
-    {reply, Reply, state_name, State}.
+
+connected({message, "game\n\n"}, State) ->
+    gen_udp:send(State#state.socket, State#state.ip, State#state.port,
+		 "world-corner 0,0\nworld-size 3000,3000\n\n"),
+    {next_state, setup_game, State}.
 
 %%--------------------------------------------------------------------
 %% Function: 
@@ -223,34 +202,24 @@ handle_sync_event(Event, From, StateName, State) ->
     Reply = ok,
     {reply, Reply, StateName, State}.
 
-%%--------------------------------------------------------------------
-%% Function: 
-%% handle_info(Info,StateName,State)-> {next_state, NextStateName, NextState}|
-%%                                     {next_state, NextStateName, NextState, 
-%%                                       Timeout} |
-%%                                     {stop, Reason, NewState}
-%% Description: This function is called by a gen_fsm when it receives any
-%% other message than a synchronous or asynchronous event
-%% (or a system message).
-%%--------------------------------------------------------------------
-handle_info(_Info, StateName, State) ->
+%%
+%% Handle non-event messages.
+%%
+%% In this case, incoming udp packets handled by generating an
+%% appropriate message.
+%%
+handle_info({udp, _Socket, _Host, _Port, Message}, StateName, State) ->
+    error_logger:info_msg(Message),
+    gen_fsm:send_event(self(), {message, Message}),
     {next_state, StateName, State}.
 
-%%--------------------------------------------------------------------
-%% Function: terminate(Reason, StateName, State) -> void()
-%% Description:This function is called by a gen_fsm when it is about
-%% to terminate. It should be the opposite of Module:init/1 and do any
-%% necessary cleaning up. When it returns, the gen_fsm terminates with
-%% Reason. The return value is ignored.
-%%--------------------------------------------------------------------
-terminate(_Reason, _StateName, _State) ->
+%%
+%% Clean up for shutdown
+%%
+terminate(_Reason, _StateName, State) ->
+    gen_udp:close(State#state.socket),
     ok.
 
-%%--------------------------------------------------------------------
-%% Function:
-%% code_change(OldVsn, StateName, State, Extra) -> {ok, StateName, NewState}
-%% Description: Convert process state when code is changed
-%%--------------------------------------------------------------------
 code_change(_OldVsn, StateName, State, _Extra) ->
     {ok, StateName, State}.
 

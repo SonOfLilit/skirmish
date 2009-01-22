@@ -214,6 +214,7 @@ fatal_contains(Id, Secret, Token) ->
 
 fatal_contains(Message, Token) ->
     Response = test_helper:connect(Message),
+    test_helper:close(),
     "fatal " ++ _ = Response,
     true = length(Response) =< 1024,
     case Token of
@@ -225,5 +226,5 @@ fatal_contains(Message, Token) ->
 
 
 success(Id, Secret) -> 
-    "ok" ++ [10, 10] = test_helper:connect(test_helper:format_handshake(Id,
-									Secret)).
+    test_helper:connect_successfully(Id, Secret),
+    test_helper:close().
