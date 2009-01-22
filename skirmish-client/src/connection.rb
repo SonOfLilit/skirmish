@@ -41,37 +41,39 @@ module Skirmish
     # in honor of my friends, FIRST Robotics Competition team #1657 HAMOSSAD
     DEFAULT_PORT = 1657
 
+    #
+    # Connects to a Skirmish Server at +host+:+port, identifies with
+    # +id+, +secret+ and returns a Connection object.
+    #
+    # May throw ServerNotFound, NetwprkProtocolError, ServerFatal.
     def initialize(host, port, id, secret, timeout=5)
       @timeout = timeout
       @buffer = ''
 
-      validate_id id
-      validate_secret secret
+      validate_id(id)
+      validate_secret(secret)
 
       begin
         bind(host, port)
-        send_header(id, secret)
-        read_ok_or_fatal()
+        send("version #{PROTOCOL_VERSION}\nid #{id}\nsecret #{secret}\n\n")
+        read_and_parse_message(:ok)
       rescue NetworkTimeout, Errno::ECONNREFUSED, Errno::EHOSTUNREACH => ex
         raise ServerNotFound, ex
       end
     end
 
-    REQUEST_RESPONSE_RE = /^world-corner (\d+),(\d+)\nworld-size (\d+),(\d+)\n\n$/
-    MAX_LONG = 2 ** 32
+    #
+    # Request a new game from the server. Returns a GameWorld object.
+    #
+    # Allowed only immediately after connecting.
+    #
     def request_game()
       send("game\n\n")
-      message = read_message_blocking()
-      match = message.match(REQUEST_RESPONSE_RE)
-      raise NetworkProtocolError unless match and match.captures.length == 4
-      captures = match.captures.map do|s|
-        i = s.to_i
-        raise NetworkProtocolError unless i < MAX_LONG
-        i
-      end
-      corner = captures[0..1]
-      size = captures[2..3]
-      world_rect = corner + (0..1).map{|i| corner[i] + size[i] - 1}
+      x, y, w, h = read_and_parse_message(:request_game_response)
+      ul_corner = [x, y]
+      size = [w, h]
+      lr_corner = (0..1).map{|i| ul_corner[i] + size[i] - 1}
+      world_rect = ul_corner + lr_corner
       return GameWorld.new(world_rect)
     end
 
@@ -88,16 +90,11 @@ module Skirmish
       raise ArgumentError, "Secret may not contain newlines" if secret.index("\n")
     end
 
-    # currently does almost nothing, all the work is done in send_header
     def bind(host, port)
       @socket = UDPSocket.new()
       @socket.bind("", 0)
       @host = host
       @port = port
-    end
-
-    def send_header(id, secret)
-      send("version #{PROTOCOL_VERSION}\nid #{id}\nsecret #{secret}\n\n")
     end
 
     def send(data)
@@ -127,16 +124,57 @@ module Skirmish
       end
     end
 
-    def read_ok_or_fatal()
-      message = read_message_blocking
-      return if message.eql? "ok\n\n"
 
-      @socket.close
-      if message[0, 6].eql? "fatal "
-        raise ServerFatal, message[6..-1]
+    MESSAGES = {
+      :ok => [/^ok\n\n$/, 0],
+      :request_game_response =>
+      [/^world-corner (\d+),(\d+)\nworld-size (\d+),(\d+)\n\n$/, 4]
+    }
+
+    #
+    # Reads one message from the server and tries to parse it as a
+    # message of the given kind.
+    #
+    # +MESSAGES+ is a dictionary of kinds of messages. Its values are
+    # arrays with cell 0 containing a regular expression matched
+    # against the message and cell 1 the number of LONG parameters to
+    # extract from it.
+    #
+    #--
+    # TODO find a better way to match against the whole string and
+    # not just one line
+    #++
+    MAX_LONG = 2 ** 32
+    def read_and_parse_message(type)
+      message = read_message_blocking()
+      match = MESSAGES[type][0].match(message)
+      if match and
+          match.pre_match.length == 0 and
+          match.post_match.length == 0 and
+          match.captures and
+          match.captures.length == MESSAGES[type][1]
+        return match.captures.map do |s|
+          i = s.to_i
+          raise NetworkProtocolError unless i < MAX_LONG
+          i
+        end
       else
-        raise NetworkProtocolError, "unexpected server response" + message.inspect
+        @socket.close
+        if /^fatal /.match(message)
+          raise ServerFatal, message[6..-1]
+        else
+          msg = "Unexpected server response" + message.inspect
+          raise NetworkProtocolError, msg
+        end
       end
+    end
+
+    def recv_ok()
+      read_and_parse_message(:ok)
+    end
+
+    def recv_request_game_response()
+      read_and_parse_message(:request_game_response)
     end
 
   end

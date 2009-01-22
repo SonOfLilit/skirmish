@@ -96,10 +96,16 @@ module ConnectionTestHelper
     end
   end
 
-  def ensure_server_fatal message, &block
+  def ensure_server_fatal message, options={}, &block
     assert_raise ServerFatal do
       begin
-        connect :server_response => "fatal #{message}"
+        key = if options[:request_game]
+                :request_game_response
+              else
+                :server_response
+              end
+          options[key] = "fatal #{message}"
+        connect options
       rescue ServerFatal => e
         assert_match message, e.to_s
         raise e

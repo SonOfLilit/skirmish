@@ -24,6 +24,16 @@ class TestNewGame < Test::Unit::TestCase
     request_game :corner => [1000000, 1000000], :size => [10000, 10000]
   end
 
+  def test_fatal
+    [# nothing
+     "",
+     # short
+     "asdf"
+    ].each do |fatal|
+      ensure_server_fatal fatal, :request_game => true
+    end
+  end
+
   def response(x, y, w, h)
     "world-corner #{x},#{y}\n" \
     "world-size #{w},#{h}\n" \
@@ -52,7 +62,9 @@ class TestNewGame < Test::Unit::TestCase
      response(2 ** 32, 0, 3000, 3000),
      response(0, 0, 2 ** 32, 3000)
     ].each do |response|
-      assert_raise NetworkProtocolError do
+      msg = "Invalid server response does not trigger NetworkProtocolError:\n" +
+        response.inspect
+      assert_raise NetworkProtocolError, msg do
         request_game :request_game_response => response
       end
     end

@@ -63,6 +63,7 @@ class TestConnectErrors < Test::Unit::TestCase
     garbage_server_response "ok\n"
     garbage_server_response "\nok\n\n"
     garbage_server_response "ok\n\n\n"
+    garbage_server_response "OK\n\n"
     garbage_server_response "world-corner 0,0\nworld-size 3000,3000\n\n"
   end
 
