@@ -33,14 +33,14 @@ init_per_testcase(_TestCase, Config) ->
     Config.
 
 end_per_testcase(_TestCase, _Config) ->
-    test_helper:close(),
     ok.
 
 sequences() -> 
     [].
 
 all() ->
-    [test_valid].
+    [test_valid,
+     test_protocol_garbage].
 
 %%--------------------------------------------------------------------
 %% TEST CASES
@@ -55,12 +55,34 @@ test_valid(_Config) ->
     request_game_with(1000, 1000, 3000, 3000),
     request_game_with(0, 1000, 3000, 3000),
     request_game_with(1000, 0, 3000, 3000),
-    request_game_with(1000000, 1000000, 3000, 3000).    
+    request_game_with(1000000, 1000000, 3000, 3000),
+    request_game_with(0, 0, 100, 100),
+    request_game_with(0, 0, 1000, 1000),
+    request_game_with(0, 0, 10000, 100),
+    request_game_with(0, 0, 100, 10000),
+    request_game_with(0, 0, 10000, 10000),
+    request_game_with(1000000, 1000000, 10000, 10000).
 
+test_protocol_garbage(_Config) ->
+    protocol_error("asdf"),
+    protocol_error("game"),
+    protocol_error("game\n"),
+    protocol_error("game\n\n\n"),
+    protocol_error("\ngame\n\n").
+    
 
 %%--------------------------------------------------------------------
 %% INTERNAL
 %%--------------------------------------------------------------------
+
+protocol_error(Message) ->
+    fatal_contains(Message, "Skirmish server").
+
+fatal_contains(Message, Token) ->
+    test_helper:connect_successfully("myid", ""),
+    Response = test_helper:send(Message),
+    test_helper:close(),
+    test_helper:fatal_contains(Response, Token).
 
 request_game_with(X, Y, W, H) ->
     skirmish_server_listener:set_dimensions(X, Y, W, H),

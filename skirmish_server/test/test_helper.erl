@@ -11,9 +11,11 @@
 -export([connect/1,
 	 connect_successfully/2,
 	 close/0,
+	 send/1,
 	 request_game/0,
 	 format_handshake/2,
-	 format_handshake/3]).
+	 format_handshake/3,
+	 fatal_contains/2]).
 
 % internal
 -export([do_connect/1]).
@@ -31,6 +33,16 @@ format_handshake(Id, Secret, Version) ->
 	"secret " ++ Secret ++ "\n"
 	"\n".
 
+fatal_contains(Response, Token) ->
+    "fatal " ++ _ = Response,
+    true = length(Response) =< 1024,
+    case Token of
+	[] ->
+	    ok;
+	_Else ->
+	    true = string:str(Response, Token) > 0
+    end.
+
 
 connect_successfully(Id, Secret) ->
     "ok\n\n" = connect(format_handshake(Id, Secret)).
@@ -41,9 +53,12 @@ connect(Message) ->
     test_client ! {send, Message},
     await_response().
 
-request_game() ->
-    test_client ! {send, "game\n\n"},
+send(Message) ->
+    test_client ! {send, Message},
     await_response().
+
+request_game() ->
+    send("game\n\n").
 
 close() ->
     test_client ! close,

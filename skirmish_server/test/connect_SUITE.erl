@@ -215,14 +215,7 @@ fatal_contains(Id, Secret, Token) ->
 fatal_contains(Message, Token) ->
     Response = test_helper:connect(Message),
     test_helper:close(),
-    "fatal " ++ _ = Response,
-    true = length(Response) =< 1024,
-    case Token of
-	[] ->
-	    ok;
-	_Else ->
-	    true = string:str(Response, Token) > 0
-    end.
+    test_helper:fatal_contains(Response, Token).
 
 
 success(Id, Secret) -> 

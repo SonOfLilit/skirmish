@@ -27,6 +27,7 @@
 
 -record(state, {ip, port, socket, dimensions}).
 
+
 %%
 %% API
 %%
@@ -34,22 +35,121 @@
 start(Addr, Dimensions, Msg) ->
     gen_fsm:start(?MODULE, [Addr, Dimensions, Msg], []).
 
+
 %%
 %% gen_fsm callbacks
 %%
 
 init([{IP, Port}, Dim, Msg]) ->
     {ok, Socket} = gen_udp:open(0, [list, {active,true}]),
-    Resp = response_to_handshake(Msg),
-    ok = gen_udp:send(Socket, IP, Port, Resp),
-    {ok, connected, #state{ip=IP, port=Port, socket=Socket, dimensions=Dim}}.
+    ParseResult = parse_handshake(Msg),
+    Resp = response_to_handshake(ParseResult),
+    State = #state{ip=IP, port=Port, socket=Socket, dimensions=Dim},
+    send(State, Resp),
+    Return = case ParseResult of
+		 {ok, _, _} ->
+		     {ok, connected, State};
+		 {error, Error} ->
+		     {stop, Error, State}
+	     end,
+    Return.
 
-response_to_handshake(Handshake) ->
-    case parse_handshake(Handshake) of
-	{ok, _, _} ->
+
+%%
+%% State handler functions
+%%
+
+connected({message, "game\n\n"}, State) ->
+    Resp = lists:flatten(
+	     io_lib:format("world-corner ~w,~w\nworld-size ~w,~w\n\n",
+			   State#state.dimensions)),
+    gen_udp:send(State#state.socket, State#state.ip, State#state.port, Resp),
+    {next_state, setup_game, State};
+connected({message, _}, State) ->
+    send(State, fatal_parse_error()),
+    {stop, protocol_error, State}.
+
+%%--------------------------------------------------------------------
+%% Function: 
+%% handle_event(Event, StateName, State) -> {next_state, NextStateName, 
+%%                                                NextState} |
+%%                                          {next_state, NextStateName, 
+%%                                                NextState, Timeout} |
+%%                                          {stop, Reason, NewState}
+%% Description: Whenever a gen_fsm receives an event sent using
+%% gen_fsm:send_all_state_event/2, this function is called to handle
+%% the event.
+%%--------------------------------------------------------------------
+handle_event(_Event, StateName, State) ->
+    {next_state, StateName, State}.
+
+%%--------------------------------------------------------------------
+%% Function: 
+%% handle_sync_event(Event, From, StateName, 
+%%                   State) -> {next_state, NextStateName, NextState} |
+%%                             {next_state, NextStateName, NextState, 
+%%                              Timeout} |
+%%                             {reply, Reply, NextStateName, NextState}|
+%%                             {reply, Reply, NextStateName, NextState, 
+%%                              Timeout} |
+%%                             {stop, Reason, NewState} |
+%%                             {stop, Reason, Reply, NewState}
+%% Description: Whenever a gen_fsm receives an event sent using
+%% gen_fsm:sync_send_all_state_event/2,3, this function is called to handle
+%% the event.
+%%--------------------------------------------------------------------
+handle_sync_event(Event, From, StateName, State) ->
+    Reply = ok,
+    {reply, Reply, StateName, State}.
+
+%%
+%% Handle non-event messages.
+%%
+%% In this case, incoming udp packets handled by generating an
+%% appropriate message.
+%%
+handle_info({udp, _Socket, _Host, _Port, Message}, StateName, State) ->
+    gen_fsm:send_event(self(), {message, Message}),
+    {next_state, StateName, State}.
+
+%%
+%% Clean up for shutdown
+%%
+terminate(_Reason, _StateName, State) ->
+    gen_udp:close(State#state.socket),
+    ok.
+
+code_change(_OldVsn, StateName, State, _Extra) ->
+    {ok, StateName, State}.
+
+
+%%
+%% Internal functions
+%%
+
+%%
+%% UDP
+%%
+
+send(#state{ip=Ip, port=Port, socket=Socket}, Message) ->
+    ok = gen_udp:send(Socket, Ip, Port, Message).
+
+%%
+%% Parsing
+%%
+
+response_to_handshake(ParseResult) ->
+    Result = case ParseResult of
+		 {ok, _, _} ->
+		     ok;
+		 {error, Error} ->
+		     Error
+	     end,
+    case Result of
+	ok ->
 	    ok();
 	parse_error ->
-	    fatal("You have reached a Skirmish server, and yet you are not a Skirmish client");
+	    fatal_parse_error();
 	wrong_protocol_version ->
 	    fatal("Server is running a different version of Skirmish (" ++
 		  ?PROTOCOL_VERSION_STR ++ ")");
@@ -67,6 +167,9 @@ response_to_handshake(Handshake) ->
 	    error_logger:error_msg("Unexpected error during parsing, got ~p", [Result]),
 	    fatal("Server Error. Please try again later.")
     end.
+
+fatal_parse_error() ->
+    fatal("You have reached a Skirmish server, and yet you are not a Skirmish client").
 
 fatal(Msg) ->
     "fatal " ++ Msg.
@@ -133,7 +236,12 @@ match_single_newline(String) ->
     end.
 
 parse_handshake(Handshake) ->
-    catch(do_parse_handshake(Handshake)).
+    case catch(do_parse_handshake(Handshake)) of
+	Ok = {ok, _, _} ->
+	    Ok;
+	Error ->
+	    {error, Error}
+    end.
 
 do_parse_handshake(Handshake) ->
     {Version, Rest1} = match_line(Handshake, "version "),
@@ -146,72 +254,3 @@ do_parse_handshake(Handshake) ->
     match_single_newline(Rest3),
 
     validate_id(Id, Secret).
-
-
-%%
-%% State handler functions
-%%
-
-connected({message, "game\n\n"}, State) ->
-    Resp = lists:flatten(
-	     io_lib:format("world-corner ~w,~w\nworld-size ~w,~w\n\n",
-			   State#state.dimensions)),
-    gen_udp:send(State#state.socket, State#state.ip, State#state.port, Resp),
-    {next_state, setup_game, State}.
-
-%%--------------------------------------------------------------------
-%% Function: 
-%% handle_event(Event, StateName, State) -> {next_state, NextStateName, 
-%%                                                NextState} |
-%%                                          {next_state, NextStateName, 
-%%                                                NextState, Timeout} |
-%%                                          {stop, Reason, NewState}
-%% Description: Whenever a gen_fsm receives an event sent using
-%% gen_fsm:send_all_state_event/2, this function is called to handle
-%% the event.
-%%--------------------------------------------------------------------
-handle_event(_Event, StateName, State) ->
-    {next_state, StateName, State}.
-
-%%--------------------------------------------------------------------
-%% Function: 
-%% handle_sync_event(Event, From, StateName, 
-%%                   State) -> {next_state, NextStateName, NextState} |
-%%                             {next_state, NextStateName, NextState, 
-%%                              Timeout} |
-%%                             {reply, Reply, NextStateName, NextState}|
-%%                             {reply, Reply, NextStateName, NextState, 
-%%                              Timeout} |
-%%                             {stop, Reason, NewState} |
-%%                             {stop, Reason, Reply, NewState}
-%% Description: Whenever a gen_fsm receives an event sent using
-%% gen_fsm:sync_send_all_state_event/2,3, this function is called to handle
-%% the event.
-%%--------------------------------------------------------------------
-handle_sync_event(Event, From, StateName, State) ->
-    Reply = ok,
-    {reply, Reply, StateName, State}.
-
-%%
-%% Handle non-event messages.
-%%
-%% In this case, incoming udp packets handled by generating an
-%% appropriate message.
-%%
-handle_info({udp, _Socket, _Host, _Port, Message}, StateName, State) ->
-    gen_fsm:send_event(self(), {message, Message}),
-    {next_state, StateName, State}.
-
-%%
-%% Clean up for shutdown
-%%
-terminate(_Reason, _StateName, State) ->
-    gen_udp:close(State#state.socket),
-    ok.
-
-code_change(_OldVsn, StateName, State, _Extra) ->
-    {ok, StateName, State}.
-
-%%--------------------------------------------------------------------
-%%% Internal functions
-%%--------------------------------------------------------------------
