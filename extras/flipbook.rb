@@ -1,5 +1,8 @@
 # Copyright (c) 2006 why the lucky stiff
 
+# TODO: display constants documentation
+# TODO: display attribute documentation
+
 EXTRAS_DIR = File.expand_path(File.dirname(__FILE__))
 
 module Generators
@@ -17,7 +20,7 @@ class HTMLGenerator
       gen_into(@files)
       gen_into(@classes)
       gen_main_index
-      
+
       # this method is defined in the template file
       write_extra_pages if defined? write_extra_pages
     end
@@ -176,7 +179,7 @@ IF:aref
 ENDIF:aref
 IFNOT:aref
 <li>%name%</li>
-ENDIF:aref 
+ENDIF:aref
 END:requires
 </ul>
 ENDIF:requires
@@ -199,7 +202,7 @@ IF:aref
 ENDIF:aref
 IFNOT:aref
 <li>%name%</li>
-ENDIF:aref 
+ENDIF:aref
 END:includes
 </ul>
 ENDIF:includes
@@ -210,7 +213,7 @@ IF:method_list
 START:method_list
 IF:methods
 START:methods
-<h4 class="ruled">%type% %category% method: 
+<h4 class="ruled">%type% %category% method:
 IF:callseq
 <strong><a name="%aref%">%callseq%</a></strong> <a href="#%aref%"><img src="%root%/permalink.gif" border="0" title="Permalink to %callseq%" /></a>
 ENDIF:callseq
@@ -441,10 +444,10 @@ FILE_INDEX = %{
 <!--
   body {
 background-color: #ddddff;
-     font-family: #{FONTS}; 
-       font-size: 11px; 
+     font-family: #{FONTS};
+       font-size: 11px;
       font-style: normal;
-     line-height: 14px; 
+     line-height: 14px;
            color: #000040;
   }
 div.banner {
@@ -458,7 +461,7 @@ div.banner {
   text-align: center;
   width: 100%;
 }
-  
+
 -->
 </style>
 <base target="docwin">

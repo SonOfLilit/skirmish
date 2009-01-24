@@ -13,7 +13,7 @@
 %% API
 -export([start_link/0,
 	 start_link/1,
-	 set_dimensions/4]).
+	 set_world_dimensions/4]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
@@ -36,8 +36,8 @@ start_link(Args) ->
     gen_server:start_link({local, ?SERVER}, ?MODULE, Args, []).
     
 
-set_dimensions(X, Y, W, H) ->
-    gen_server:call(?SERVER, {set_dimensions, [X, Y, W, H]}).
+set_world_dimensions(X, Y, W, H) ->
+    gen_server:call(?SERVER, {set_world_dimensions, [X, Y, W, H]}).
 
 %%
 %% gen_server callbacks
@@ -51,7 +51,7 @@ init([Port, Dimensions]) ->
     {ok, Socket} = gen_udp:open(Port, [list, {active,true}]),
     {ok, #state{socket=Socket, dimensions=Dimensions}}.
 
-handle_call({set_dimensions, Dim}, _From, State) ->
+handle_call({set_world_dimensions, Dim}, _From, State) ->
     Reply = ok,
     {reply, Reply, State#state{dimensions=Dim}}.
 

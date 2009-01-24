@@ -5,17 +5,18 @@ class GameNegotiationAcceptance < Skirmish::SystemTest
 
   def setup
     start_server
-    start_client
   end
 
   def teardown
-    stop_client
     stop_server
   end
 
   def test_simplest_case
+    start_client
     start_game
     assert_equal [0, 0, 2999, 2999], client_world_rectangle
+  ensure
+    stop_client
   end
   def test_non_square
     configure_server_start_game :corner => [10000, 10000], :size => [3000, 4000]
@@ -37,11 +38,14 @@ class GameNegotiationAcceptance < Skirmish::SystemTest
 
   def configure_server_start_game options
     server_configure_game options
+    start_client # has to come AFTER configure_game
     start_game
     corner_x, corner_y = options[:corner]
     width, height = options[:size]
     world = client_world_rectangle
     assert_equal [corner_x, corner_y, corner_x+width-1, corner_y+height- 1], world
+  ensure
+    stop_client
   end
 
 end

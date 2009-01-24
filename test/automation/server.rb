@@ -47,6 +47,14 @@ module Skirmish::Automation
       log.info("Automation#stop_server") { "server stopped" }
     end
 
+    def server_configure_game options
+      options[:corner] ||= [0, 0]
+      options[:size] ||= [3000, 3000]
+      xywh = options[:corner] + options[:size]
+      cmd = "skirmish_server:set_world_dimensions(%d,%d,%d,%d)." % xywh
+      @automation_server << cmd >> /ok/
+    end
+
   end
 
 end

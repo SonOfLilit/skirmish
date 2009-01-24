@@ -11,7 +11,8 @@
 -behaviour(supervisor).
 
 %% API
--export([start_link/1]).
+-export([start_link/1,
+	 set_world_dimensions/4]).
 
 %% Application callbacks
 -export([start/2, stop/1]).
@@ -25,6 +26,10 @@
 
 start_link(Args) ->
     supervisor:start_link(?MODULE, Args).
+
+set_world_dimensions(X, Y, W, H) ->
+    skirmish_server_listener:set_world_dimensions(X, Y, W, H).
+
 
 %%
 %% Application callbacks

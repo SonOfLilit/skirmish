@@ -85,7 +85,7 @@ fatal_contains(Message, Token) ->
     test_helper:fatal_contains(Response, Token).
 
 request_game_with(X, Y, W, H) ->
-    skirmish_server_listener:set_dimensions(X, Y, W, H),
+    skirmish_server:set_world_dimensions(X, Y, W, H),
     test_helper:connect_successfully("myid", ""),
     is_response(X, Y, W, H),
     test_helper:close().

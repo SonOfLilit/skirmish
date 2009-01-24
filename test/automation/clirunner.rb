@@ -133,7 +133,7 @@ module Skirmish::Automation
     def read_once # :nodoc:
       begin
         response = self.read_nonblock(8196)
-        response.split.each { |l| log.info(cli_option(:name)) { ">> #{l}" } }
+        response.each_line { |l| log.info(cli_option(:name)) { ">> #{l}" } }
       rescue Errno::EAGAIN
         IO.select([self])
         retry

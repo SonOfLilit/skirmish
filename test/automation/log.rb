@@ -8,7 +8,7 @@ module Kernel
   def log
     unless $automation_logger
       $automation_logger = Logger.new(STDOUT)
-      $automation_logger.level = Logger::ERROR
+      $automation_logger.level = Logger::WARN
     end
     $automation_logger
   end

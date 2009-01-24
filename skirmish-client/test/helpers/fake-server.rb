@@ -9,30 +9,37 @@ class FakeServer
   def initialize port, waittime=DEFAULT_TIMEOUT
     @timeout = waittime
     @buffer = ''
+    @socket = nil
     @addr = nil
     @sockaddr = nil
     @listener = UDPSocket.new
-    @listener.bind('localhost', port)
+    @listener.bind("", port)
   end
 
   def read
+    socket = @socket || @listener
+
     pair = nil
 
     begin
-      pair = @listener.recvfrom_nonblock(32767)
+      pair = socket.recvfrom_nonblock(32767)
     rescue Errno::EAGAIN
-      IO.select([@listener])
+      IO.select([socket])
       retry
     end
 
-    # if this is first read, store remote address
-    unless @addr
+    # if this is first read, store remote address and start dedicated
+    # socket
+    unless @socket
       @addr = pair[1]
       af, port, host, addr = @addr
       @sockaddr = Socket.sockaddr_in(port, addr)
+
+      @socket = UDPSocket.new
+      @socket.bind("", 0)
     end
 
-    assert_equal @addr, pair[1], "only one client supported"
+    assert_equal @addr, pair[1], "only one client supported by fake-server"
 
     @buffer << pair[0]
   end
@@ -54,11 +61,12 @@ class FakeServer
   end
 
   def send string
-    @listener.send string, 0, @sockaddr
+    @socket.send string, 0, @sockaddr
   end
 
   def close
     @listener.close
+    @socket.close if @socket
   end
 
   def closed?

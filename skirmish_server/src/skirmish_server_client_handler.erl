@@ -46,13 +46,12 @@ init([{IP, Port}, Dim, Msg]) ->
     Resp = response_to_handshake(ParseResult),
     State = #state{ip=IP, port=Port, socket=Socket, dimensions=Dim},
     send(State, Resp),
-    Return = case ParseResult of
-		 {ok, _, _} ->
-		     {ok, connected, State};
-		 {error, Error} ->
-		     {stop, Error, State}
-	     end,
-    Return.
+    case ParseResult of
+	{ok, _Id, _Secret} ->
+	    {ok, connected, State};
+	{error, Error} ->
+	    {stop, Error, State}
+    end.
 
 
 %%
@@ -65,7 +64,8 @@ connected({message, "game\n\n"}, State) ->
 			   State#state.dimensions)),
     gen_udp:send(State#state.socket, State#state.ip, State#state.port, Resp),
     {next_state, setup_game, State};
-connected({message, _}, State) ->
+connected({message, Req}, State) ->
+    error_logger:error_msg("Got illegal request from client: '~p'", [Req]),
     send(State, fatal_parse_error()),
     {stop, protocol_error, State}.
 

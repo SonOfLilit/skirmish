@@ -51,7 +51,7 @@ module Skirmish::Automation
 
       begin
         @automation_client << "connect #{host.inspect}, #{port.inspect}, " \
-        "#{id.inspect}, #{secret.inspect}\n" >> /connected/i
+        "#{id.inspect}, #{secret.inspect}" >> /connected/i
       rescue MatchError => m
         case m.message
         when /server error/i: raise ServerFatal
@@ -112,18 +112,19 @@ module Skirmish::Automation
     # Request a new game from the server
     #
     def start_game
-      assert_raises_nothing do
+      m = nil
+      assert_nothing_raised do
         m = @automation_client << "new_game" >>
-          /world from \((\d),(\d)\) to \((\d),(\d)\)/
+          /world from \((\d+),(\d+)\) to \((\d+),(\d+)\)/
       end
-      @automation_client_game_rect = m.captures.map {|s| s.to_i }
+      @automation_client_world_rect = m.captures.map {|s| s.to_i }
     end
 
     #
     # Returns [top, left, right, bottom] cooerdinates of the game world
     #
-    def client_game_rect
-      @automation_client_game_rect
+    def client_world_rectangle
+      @automation_client_world_rect
     end
 
   end

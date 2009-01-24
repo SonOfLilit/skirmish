@@ -67,7 +67,7 @@ module ConnectionTestHelper
 
     Thread.abort_on_exception = true # otherwise t.raise doesn't work TODO ask why
     parent = Thread.current
-    @server_thread = Thread.new do
+    server_thread = Thread.new do
       begin
         @server.expect "version #{Connection::PROTOCOL_VERSION}\n" \
                        "id #{options[:id]}\n" \
@@ -83,15 +83,16 @@ module ConnectionTestHelper
         parent.raise e unless options[:ignore_server_errors]
       end
     end
+    return server_thread
   end
 
   def connect_with_fake_server options
-    start_server_thread options
+    server_thread = start_server_thread options
     conn = connection_new options
     do_request_game conn, options if options[:request_game]
   ensure
     unless options[:keep_server]
-      @server_thread.kill
+      server_thread.kill
       @server.close unless @server.nil? or @server.closed?
     end
   end
