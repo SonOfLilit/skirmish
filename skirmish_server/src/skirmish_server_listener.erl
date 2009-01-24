@@ -22,7 +22,7 @@
 
 -define(DEFAULT_PORT, 1657). % Default port to listen on TODO: DRY with client
 
--record(state, {socket}).
+-record(state, {socket, dimensions}).
 
 %%
 %% API
@@ -40,8 +40,10 @@ start_link(Args) ->
 init([]) ->
     init([?DEFAULT_PORT]);
 init([Port]) ->
+    init([Port, [0, 0, 3000, 3000]]);
+init([Port, Dimensions]) ->
     {ok, Socket} = gen_udp:open(Port, [list, {active,true}]),
-    {ok, #state{socket=Socket}}.
+    {ok, #state{socket=Socket, dimensions=Dimensions}}.
 
 %%--------------------------------------------------------------------
 %% Function: %% handle_call(Request, From, State) -> {reply, Reply, State} |
@@ -71,8 +73,9 @@ handle_cast(_Msg, State) ->
 %%                                       {stop, Reason, State}
 %% Description: Handling all non call/cast messages
 %%--------------------------------------------------------------------
-handle_info({udp, Socket, IP, InPortNo, Packet}, State=#state{socket=Socket}) ->
-    skirmish_server_client_handler:start({IP, InPortNo}, Packet),
+handle_info({udp, Socket, IP, InPortNo, Packet},
+	    State=#state{socket=Socket, dimensions=Dimensions}) ->
+    skirmish_server_client_handler:start({IP, InPortNo}, Dimensions, Packet),
     {noreply, State};
 handle_info(_Msg, State) ->
     {noreply, State}.

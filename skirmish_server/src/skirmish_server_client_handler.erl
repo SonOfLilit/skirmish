@@ -10,7 +10,7 @@
 -behaviour(gen_fsm).
 
 %% API
--export([start/2]).
+-export([start/3]).
 
 %% gen_fsm callbacks
 -export([init/1,
@@ -25,36 +25,24 @@
 
 -define(NEWLINE, 10).
 
--record(state, {ip, port, socket}).
+-record(state, {ip, port, socket, dimensions}).
 
-%%====================================================================
+%%
 %% API
-%%====================================================================
-%%--------------------------------------------------------------------
-%% Function: start({IP, Port}, Msg) -> ok,Pid} | ignore | {error,Error}
-%% Description: Creates a client_handler gen_fsm. Msg is the message
-%%              already sent by the client.
-%%--------------------------------------------------------------------
-start({IP, Port}, Msg) ->
-    gen_fsm:start(?MODULE, {{IP, Port}, Msg}, []).
+%%
 
-%%====================================================================
+start(Addr, Dimensions, Msg) ->
+    gen_fsm:start(?MODULE, [Addr, Dimensions, Msg], []).
+
+%%
 %% gen_fsm callbacks
-%%====================================================================
-%%--------------------------------------------------------------------
-%% Function: init(Args) -> {ok, StateName, State} |
-%%                         {ok, StateName, State, Timeout} |
-%%                         ignore                              |
-%%                         {stop, StopReason}                   
-%% Description:Whenever a gen_fsm is started using gen_fsm:start/[3,4] or
-%% gen_fsm:start_link/3,4, this function is called by the new process to 
-%% initialize. 
-%%--------------------------------------------------------------------
-init({Addr = {IP, Port}, Msg}) ->
+%%
+
+init([{IP, Port}, Dim, Msg]) ->
     {ok, Socket} = gen_udp:open(0, [list, {active,true}]),
     Resp = response_to_handshake(Msg),
     ok = gen_udp:send(Socket, IP, Port, Resp),
-    {ok, connected, #state{ip=IP, port=Port, socket=Socket}}.
+    {ok, connected, #state{ip=IP, port=Port, socket=Socket, dimensions=Dim}}.
 
 response_to_handshake(Handshake) ->
     case parse_handshake(Handshake) of
@@ -160,13 +148,15 @@ do_parse_handshake(Handshake) ->
     validate_id(Id, Secret).
 
 
-%%--------------------------------------------------------------------
+%%
 %% State handler functions
-%%--------------------------------------------------------------------
+%%
 
 connected({message, "game\n\n"}, State) ->
-    gen_udp:send(State#state.socket, State#state.ip, State#state.port,
-		 "world-corner 0,0\nworld-size 3000,3000\n\n"),
+    Resp = lists:flatten(
+	     io_lib:format("world-corner ~w,~w\nworld-size ~w,~w\n\n",
+			   State#state.dimensions)),
+    gen_udp:send(State#state.socket, State#state.ip, State#state.port, Resp),
     {next_state, setup_game, State}.
 
 %%--------------------------------------------------------------------
@@ -209,7 +199,6 @@ handle_sync_event(Event, From, StateName, State) ->
 %% appropriate message.
 %%
 handle_info({udp, _Socket, _Host, _Port, Message}, StateName, State) ->
-    error_logger:info_msg(Message),
     gen_fsm:send_event(self(), {message, Message}),
     {next_state, StateName, State}.
 
