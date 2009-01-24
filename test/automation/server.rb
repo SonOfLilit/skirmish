@@ -31,7 +31,9 @@ module Skirmish::Automation
       log.info("Automation#start_server") { "server started" }
     end
 
+    #
     # Stop a skirmish server started with #start_server
+    #
     def stop_server
       if @automation_server
         # in case of error, does not affect next tests
@@ -47,6 +49,12 @@ module Skirmish::Automation
       log.info("Automation#stop_server") { "server stopped" }
     end
 
+    #
+    # Configure server - currently used to call set_world_dimensions
+    #
+    # +options[:corner]+ and +options[:size], if they exist, are used
+    # - otherwise defaults are set.
+    #
     def server_configure_game options
       options[:corner] ||= [0, 0]
       options[:size] ||= [3000, 3000]

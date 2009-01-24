@@ -69,4 +69,5 @@ class TestNewGame < Test::Unit::TestCase
       end
     end
   end
+
 end

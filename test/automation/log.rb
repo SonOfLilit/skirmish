@@ -2,6 +2,8 @@ require 'logger'
 
 module Kernel
 
+  $automation_logger = nil
+
   #
   # Creates or returns a +Logger+ object that logs to +STDOUT+
   #

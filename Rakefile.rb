@@ -5,6 +5,7 @@ require 'rake/rdoctask'
 
 # erlang common_test run_test script
 run_test = *Dir['/usr/local/lib/erlang/lib/common_test-*/priv/bin/run_test']
+edoc = "erl -noshell -run edoc_run"
 
 # === Project map
 # * skirmish
@@ -104,6 +105,14 @@ Rake::RDocTask.new :client_devel_docs do |rd|
   rd.template = "extras/flipbook.rb"
 end
 
+Rake::RDocTask.new :client_docs do |rd|
+  rd.rdoc_dir = 'doc/client'
+  rd.main = 'Skirmish::Client'
+  rd.rdoc_files.include('skirmish-client/src/**.rb')
+  rd.options << '--inline-source'
+  rd.template = "extras/flipbook.rb"
+end
+
 desc "Build server"
 task :build_server => "skirmish_server/ebin/skirmish_server.app" do
   cd 'skirmish_server'
@@ -125,6 +134,21 @@ task :test_server => [:build_server, server_test_log_dir] do
 end
 CLOBBER << server_test_log_dir
 
+server_docs_cmd = "#{edoc} application skirmish_server skirmish_server "
+server_devel_doc_dir = "doc/server_devel"
+desc "Build server development documentation"
+task :server_devel_docs do |t|
+  sh server_docs_cmd + "'[{dir,\"#{server_devel_doc_dir}\"},private,todo]'"
+end
+CLOBBER << server_devel_doc_dir
+
+server_doc_dir = "doc/server"
+desc "Build server documentation"
+task :server_docs do |t|
+  sh server_docs_cmd + "'[{dir,\"#{server_doc_dir}\"}]'"
+end
+CLOBBER << server_doc_dir
+
 desc "Run all tests"
 task :test_all => [:test_client, :test_server, :test]
 
@@ -136,7 +160,13 @@ Rake::TestTask.new :test do |t|
 end
 
 desc "Build documentation"
-task :doc => [:design_docs, :client_devel_docs, :automation_docs, :test_docs]
+task :doc => [:design_docs,
+              :client_docs,
+              :client_devel_docs,
+              :server_docs,
+              :server_devel_docs,
+              :automation_docs,
+              :test_docs]
 
 desc "Build design documents"
 task :design_docs => ['design', 'protocol'].map {|n| "doc/design/#{n}.html" }

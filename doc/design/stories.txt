@@ -5,7 +5,7 @@ Estimated 3h
 Real So long it is irrelevant. Took a good four days of work.
 
 Story 1: Trivial game negotiation
-Client requests game, server sends world parameters
+Client requests game, server sends world parameters; Server configuration interface
 Assigned aursaraf
 Estimated 1h
 Real Again, a day and not yet done. Mostly due to refactoring of test support code. Will have to separate estimations.

@@ -18,9 +18,14 @@ module Skirmish
       super
     end
 
+    #
+    # Executes block, rescuing any exceptions, and asserts that an
+    # exception was indeed raised and that its message matches +pattern+
+    #
+    # Behaves like assertions in Test::Unit::Assertions
+    #
     def assert_raised_message_matches pattern, message="", &block
-      m = build_message(message,
-                        "exception expected but none was thrown.")
+      m = build_message(message, "exception expected but none was thrown.")
       ex = nil
       assert_block(m) do
         begin

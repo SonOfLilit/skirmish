@@ -71,7 +71,6 @@ module Skirmish
 
     def initialize()
       if ARGV[0] == '--console'
-        console = ConsoleCommands.new()
         out = STDOUT
         out.extend(ConsoleOut)
         repl(STDIN, out)
@@ -81,20 +80,21 @@ module Skirmish
     #
     # A Read-Eval-Print Loop using streams +in+, +out+
     #
-    def repl(in, out)
-        out < 'Skirmish Client'
-        while true
-          line = in.gets()
-          if line
-            begin
-              out < (" => " + console.instance_eval(line).inspect)
-            rescue StandardError, ScriptError => e
-              out < "#{e.class}: #{e.message}\n#{e.backtrace.join("\n")}"
-            end
-          else
-            exit
+    def repl(stream_in, out) # 'in' is reserved
+      console = ConsoleCommands.new()
+      out < 'Skirmish Client'
+      while true
+        line = stream_in.gets()
+        if line
+          begin
+            out < (" => " + console.instance_eval(line).inspect)
+          rescue StandardError, ScriptError => e
+            out < "#{e.class}: #{e.message}\n#{e.backtrace.join("\n")}"
           end
+        else
+          exit
         end
+      end
     end
 
   end

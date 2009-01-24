@@ -1,10 +1,8 @@
-%%%-------------------------------------------------------------------
-%%% File    : skirmish_server_client_handler.erl
-%%% Author  : Aur Saraf <aursaraf@Mac-2.local>
-%%% Description : Handles a single connected client
-%%%
-%%% Created : 15 Jan 2009 by Aur Saraf <aursaraf@Mac-2.local>
-%%%-------------------------------------------------------------------
+%% @author Aur Saraf <sonoflilit@gmail.com>
+%%
+%% @private
+%% @doc Handles a connected client
+
 -module(skirmish_server_client_handler).
 
 -behaviour(gen_fsm).
@@ -28,18 +26,38 @@
 -record(state, {ip, port, socket, dimensions}).
 
 
-%%
-%% API
-%%
+%% == API ==
 
+%% @spec start(Addr, Dimensions, Msg) -> Result
+%% Result = {ok,Pid} | ignore | {error,Error}
+%% Pid = pid()
+%% Error = {already_started,Pid} | term()
+%%
+%% @doc Start a skirmish_server_client_handler
+%%
+%% @see init/1
 start(Addr, Dimensions, Msg) ->
     gen_fsm:start(?MODULE, [Addr, Dimensions, Msg], []).
 
 
-%%
-%% gen_fsm callbacks
-%%
+%% == gen_fsm callbacks ==
 
+%% @type dimensions() = [integer()]. Has four members, X, Y, W, H
+%%
+%% @spec init([Arg]) -> {ok, any(), any()} | {stop, any(), any()}
+%% Arg = {IP, Port} | Dimensions | Message
+%% IP = integer()
+%% Port = integer()
+%% Dimensions = dimensions()
+%% Message = string()
+%%
+%% @doc Start a skirmish_server_client_handler.
+%%
+%% `{IP, Port}' refers to remote address to communicate with.
+%%
+%% `Dimensions' is a list `[X, Y, W, H]' of the world dimensions.
+%%
+%% `Message' is the initial handshake message sent by the client.
 init([{IP, Port}, Dim, Msg]) ->
     {ok, Socket} = gen_udp:open(0, [list, {active,true}]),
     ParseResult = parse_handshake(Msg),
@@ -54,9 +72,7 @@ init([{IP, Port}, Dim, Msg]) ->
     end.
 
 
-%%
-%% State handler functions
-%%
+%% == State handler functions ==
 
 connected({message, "game\n\n"}, State) ->
     Resp = lists:flatten(
@@ -69,22 +85,20 @@ connected({message, Req}, State) ->
     send(State, fatal_parse_error()),
     {stop, protocol_error, State}.
 
-%%--------------------------------------------------------------------
-%% Function: 
+%% @spec
 %% handle_event(Event, StateName, State) -> {next_state, NextStateName, 
 %%                                                NextState} |
 %%                                          {next_state, NextStateName, 
 %%                                                NextState, Timeout} |
 %%                                          {stop, Reason, NewState}
-%% Description: Whenever a gen_fsm receives an event sent using
+%%
+%% @doc Whenever a gen_fsm receives an event sent using
 %% gen_fsm:send_all_state_event/2, this function is called to handle
 %% the event.
-%%--------------------------------------------------------------------
 handle_event(_Event, StateName, State) ->
     {next_state, StateName, State}.
 
-%%--------------------------------------------------------------------
-%% Function: 
+%% @spec
 %% handle_sync_event(Event, From, StateName, 
 %%                   State) -> {next_state, NextStateName, NextState} |
 %%                             {next_state, NextStateName, NextState, 
@@ -94,27 +108,23 @@ handle_event(_Event, StateName, State) ->
 %%                              Timeout} |
 %%                             {stop, Reason, NewState} |
 %%                             {stop, Reason, Reply, NewState}
-%% Description: Whenever a gen_fsm receives an event sent using
-%% gen_fsm:sync_send_all_state_event/2,3, this function is called to handle
-%% the event.
-%%--------------------------------------------------------------------
+%%
+%% @doc Whenever a gen_fsm receives an event sent using
+%% gen_fsm:sync_send_all_state_event/2,3, this function is called to
+%% handle the event.
 handle_sync_event(Event, From, StateName, State) ->
     Reply = ok,
     {reply, Reply, StateName, State}.
 
-%%
-%% Handle non-event messages.
+%% @doc Handle non-event messages.
 %%
 %% In this case, incoming udp packets handled by generating an
 %% appropriate message.
-%%
 handle_info({udp, _Socket, _Host, _Port, Message}, StateName, State) ->
     gen_fsm:send_event(self(), {message, Message}),
     {next_state, StateName, State}.
 
-%%
-%% Clean up for shutdown
-%%
+%% @doc Clean up for shutdown
 terminate(_Reason, _StateName, State) ->
     gen_udp:close(State#state.socket),
     ok.
@@ -123,31 +133,30 @@ code_change(_OldVsn, StateName, State, _Extra) ->
     {ok, StateName, State}.
 
 
-%%
-%% Internal functions
-%%
+%% == Internal functions ==
 
-%%
-%% UDP
-%%
+%% === UDP ===
 
+%% @spec send(State, Message::string()) -> ok
+%%
+%% @doc Sends `Message' to the client
 send(#state{ip=Ip, port=Port, socket=Socket}, Message) ->
     ok = gen_udp:send(Socket, Ip, Port, Message).
 
-%%
-%% Parsing
-%%
+%% === Parsing ===
 
+%% @spec response_to_handshake(ParseResult) -> string()
+%%
+%% @doc The appropriate response to the client's first message
 response_to_handshake(ParseResult) ->
-    Result = case ParseResult of
-		 {ok, _, _} ->
-		     ok;
-		 {error, Error} ->
-		     Error
-	     end,
-    case Result of
-	ok ->
+    case ParseResult of
+	{ok, _, _} ->
 	    ok();
+	{error, Error} ->
+	    response_to_error(Error)
+    end.
+response_to_error(Error) ->
+    case Error of
 	parse_error ->
 	    fatal_parse_error();
 	wrong_protocol_version ->
