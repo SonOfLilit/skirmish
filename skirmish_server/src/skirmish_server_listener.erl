@@ -12,7 +12,8 @@
 
 %% API
 -export([start_link/0,
-	 start_link/1]).
+	 start_link/1,
+	 set_dimensions/4]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
@@ -20,6 +21,7 @@
 
 -include("../include/skirmish_server.hrl").
 
+-define(SERVER, ?MODULE). % Internal registered name of the server process
 -define(DEFAULT_PORT, 1657). % Default port to listen on TODO: DRY with client
 
 -record(state, {socket, dimensions}).
@@ -31,8 +33,12 @@ start_link() ->
     start_link([]).
 
 start_link(Args) ->
-    gen_server:start_link(?MODULE, Args, []).
+    gen_server:start_link({local, ?SERVER}, ?MODULE, Args, []).
     
+
+set_dimensions(X, Y, W, H) ->
+    gen_server:call(?SERVER, {set_dimensions, [X, Y, W, H]}).
+
 %%
 %% gen_server callbacks
 %%
@@ -45,18 +51,9 @@ init([Port, Dimensions]) ->
     {ok, Socket} = gen_udp:open(Port, [list, {active,true}]),
     {ok, #state{socket=Socket, dimensions=Dimensions}}.
 
-%%--------------------------------------------------------------------
-%% Function: %% handle_call(Request, From, State) -> {reply, Reply, State} |
-%%                                      {reply, Reply, State, Timeout} |
-%%                                      {noreply, State} |
-%%                                      {noreply, State, Timeout} |
-%%                                      {stop, Reason, Reply, State} |
-%%                                      {stop, Reason, State}
-%% Description: Handling call messages
-%%--------------------------------------------------------------------
-handle_call(_Request, _From, State) ->
+handle_call({set_dimensions, Dim}, _From, State) ->
     Reply = ok,
-    {reply, Reply, State}.
+    {reply, Reply, State#state{dimensions=Dim}}.
 
 %%--------------------------------------------------------------------
 %% Function: handle_cast(Msg, State) -> {noreply, State} |

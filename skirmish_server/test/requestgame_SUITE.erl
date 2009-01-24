@@ -22,9 +22,11 @@ suite() ->
 init_per_suite(Config) ->
     %% TODO: google what is the path problem
     true = code:add_path("/Users/aursaraf/src/skirmish/skirmish_server/ebin"),
+    ok = application:start(skirmish_server),
     Config.
 
 end_per_suite(_Config) ->
+    ok = application:stop(skirmish_server),
     ok.
 
 init_per_testcase(_TestCase, Config) ->
@@ -32,7 +34,6 @@ init_per_testcase(_TestCase, Config) ->
 
 end_per_testcase(_TestCase, _Config) ->
     test_helper:close(),
-    ok = application:stop(skirmish_server),
     ok.
 
 sequences() -> 
@@ -46,13 +47,26 @@ all() ->
 %%--------------------------------------------------------------------
 
 test_valid(_Config) ->
-    ok = application:start(skirmish_server),
+    % check defaults
     test_helper:connect_successfully("myid", ""),
-    is_response(0, 0, 3000, 3000).
+    is_response(0, 0, 3000, 3000),
+    test_helper:close(),
+
+    request_game_with(1000, 1000, 3000, 3000),
+    request_game_with(0, 1000, 3000, 3000),
+    request_game_with(1000, 0, 3000, 3000),
+    request_game_with(1000000, 1000000, 3000, 3000).    
+
 
 %%--------------------------------------------------------------------
 %% INTERNAL
 %%--------------------------------------------------------------------
+
+request_game_with(X, Y, W, H) ->
+    skirmish_server_listener:set_dimensions(X, Y, W, H),
+    test_helper:connect_successfully("myid", ""),
+    is_response(X, Y, W, H),
+    test_helper:close().
 
 is_response(X, Y, W, H) ->
     Response = test_helper:request_game(),
