@@ -11,7 +11,8 @@
 -behaviour(gen_server).
 
 %% API
--export([start_link/0]).
+-export([start_link/0,
+	 start_link/1]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
@@ -23,30 +24,22 @@
 
 -record(state, {socket}).
 
-%%====================================================================
+%%
 %% API
-%%====================================================================
-%%--------------------------------------------------------------------
-%% Function: start_link() -> {ok,Pid} | ignore | {error,Error}
-%% Description: Starts the server
-%%--------------------------------------------------------------------
+%%
 start_link() ->
-    gen_server:start_link(?MODULE, [], []).
+    start_link([]).
 
-%%====================================================================
+start_link(Args) ->
+    gen_server:start_link(?MODULE, Args, []).
+    
+%%
 %% gen_server callbacks
-%%====================================================================
+%%
 
-%%--------------------------------------------------------------------
-%% Function: init(Args) -> {ok, State} |
-%%                         {ok, State, Timeout} |
-%%                         ignore               |
-%%                         {stop, Reason}
-%% Description: Initiates the server
-%%--------------------------------------------------------------------
 init([]) ->
-    init([{port,?DEFAULT_PORT}]);
-init([{port, Port}]) ->
+    init([?DEFAULT_PORT]);
+init([Port]) ->
     {ok, Socket} = gen_udp:open(Port, [list, {active,true}]),
     {ok, #state{socket=Socket}}.
 
@@ -102,6 +95,6 @@ terminate(_Reason, #state{socket=Socket}) ->
 code_change(_OldVsn, State, _Extra) ->
     {ok, State}.
 
-%%--------------------------------------------------------------------
-%%% Internal functions
-%%--------------------------------------------------------------------
+%%
+%% Internal functions
+%%

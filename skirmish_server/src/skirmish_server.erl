@@ -11,7 +11,7 @@
 -behaviour(supervisor).
 
 %% API
--export([start_link/0]).
+-export([start_link/1]).
 
 %% Application callbacks
 -export([start/2, stop/1]).
@@ -23,15 +23,15 @@
 %% API functions
 %%
 
-start_link() ->
-    supervisor:start_link(?MODULE, []).
+start_link(Args) ->
+    supervisor:start_link(?MODULE, Args).
 
 %%
 %% Application callbacks
 %%
 
 start(_Type, StartArgs) ->
-    case skirmish_server:start_link() of
+    case skirmish_server:start_link(StartArgs) of
 	{ok, Pid} -> 
 	    {ok, Pid};
 	Error ->
@@ -45,9 +45,9 @@ stop(_State) ->
 %% Supervisor callbacks
 %%
 
-init([]) ->
-    Listener = {listener,{skirmish_server_listener,start_link,[]},
-              permanent,2000,worker,[skirmish_server_listener]},
+init(Args) ->
+    Listener = {listener,{skirmish_server_listener,start_link,Args},
+		permanent,2000,worker,[skirmish_server_listener]},
     {ok,{{one_for_all,0,1}, [Listener]}}.
 
 %%
