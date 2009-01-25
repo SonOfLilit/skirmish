@@ -65,8 +65,8 @@ module ConnectionTestHelper
   def start_server_thread options
     @server = FakeServer.new options[:server_port], options[:server_timeout]
 
-    Thread.abort_on_exception = true # otherwise t.raise doesn't work TODO ask why
     parent = Thread.current
+    Thread.abort_on_exception = true # otherwise t.raise doesn't work TODO ask why
     server_thread = Thread.new do
       begin
         @server.expect "version #{Connection::PROTOCOL_VERSION}\n" \
@@ -75,11 +75,11 @@ module ConnectionTestHelper
                        "\n"
         @server.send options[:server_response] if options[:server_response]
         if options[:request_game]
-          @server.expect "game\n" \
-                         "\n"
+          @server.expect "game\n\n"
           @server.send options[:request_game_response]
+          @server.expect "ok\n\n"
         end
-      rescue Object => e
+      rescue Exception => e
         parent.raise e unless options[:ignore_server_errors]
       end
     end
@@ -89,10 +89,14 @@ module ConnectionTestHelper
   def connect_with_fake_server options
     server_thread = start_server_thread options
     conn = connection_new options
-    do_request_game conn, options if options[:request_game]
+    ret = conn
+    if options[:request_game]
+      ret = do_request_game conn, options
+    end
+    server_thread.join
+    return ret
   ensure
     unless options[:keep_server]
-      server_thread.kill
       @server.close unless @server.nil? or @server.closed?
     end
   end

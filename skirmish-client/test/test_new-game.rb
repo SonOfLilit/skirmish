@@ -31,7 +31,8 @@ class TestNewGame < Test::Unit::TestCase
      # short
      "asdf"
     ].each do |fatal|
-      ensure_server_fatal fatal, :request_game => true
+      ensure_server_fatal fatal, :request_game => true,
+        :ignore_server_errors => true
     end
   end
 
@@ -75,7 +76,8 @@ class TestNewGame < Test::Unit::TestCase
       msg = "Invalid server response does not trigger NetworkProtocolError:\n" +
         response.inspect
       assert_raise NetworkProtocolError, msg do
-        request_game :request_game_response => response
+        request_game :request_game_response => response,
+          :ignore_server_errors => true
       end
     end
   end

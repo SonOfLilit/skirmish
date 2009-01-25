@@ -61,6 +61,7 @@ module Skirmish
         raise NetworkProtocolError unless c <= MAX_ULONG
         c
       end
+      send("ok\n\n")
       world_rect = ul_corner + lr_corner
       return GameWorld.new(world_rect, [[uid, ux, uy]])
     end
