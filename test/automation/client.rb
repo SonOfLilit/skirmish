@@ -127,6 +127,11 @@ module Skirmish::Automation
       @automation_client_world_rect
     end
 
+    def units
+      m = @automation_client << "game.units" >> /\[.*\]/
+      return eval(m.to_s)
+    end
+
   end
 
 end

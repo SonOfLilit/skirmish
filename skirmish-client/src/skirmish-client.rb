@@ -32,6 +32,13 @@ module Skirmish
       "world from (%d,%d) to (%d,%d)" % [x, y, x2, y2]
     end
 
+    #
+    # Get the game object
+    #
+    def game()
+      @game_world
+    end
+
   end
 
   #
