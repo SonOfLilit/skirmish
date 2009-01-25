@@ -27,21 +27,21 @@
 %%
 %% @doc Start the skirmish server
 %%
-%% `Args' is passed to skirmish_server_listener:start_link/1
-%% @see skirmish_server_listener:start_link/1
+%% `Args' is passed to listener:start_link/1
+%% @see listener:start_link/1
 start_link(Args) ->
-    supervisor:start_link(?MODULE, Args).
+    supervisor:start_link({local, ?MODULE}, ?MODULE, Args).
 
-%% @see skirmish_server_listener/4
+%% @see listener/4
 set_world_dimensions(X, Y, W, H) ->
-    skirmish_server_listener:set_world_dimensions(X, Y, W, H).
+    listener:set_world_dimensions(X, Y, W, H).
 
 
 %% == Application callbacks ==
 
 %% @private
 start(_Type, StartArgs) ->
-    case skirmish_server:start_link(StartArgs) of
+    case start_link(StartArgs) of
 	{ok, Pid} -> 
 	    {ok, Pid};
 	Error ->
@@ -55,10 +55,10 @@ stop(_State) ->
 %% == Supervisor callbacks ==
 
 %% @private
-%% @doc Starts a skirmish_server_listener worker.
+%% @doc Starts a listener worker.
 init(Args) ->
-    Listener = {listener,{skirmish_server_listener,start_link,Args},
-		permanent,2000,worker,[skirmish_server_listener]},
+    Listener = {listener,{listener,start_link,Args},
+		permanent,2000,worker,[listener]},
     {ok,{{one_for_all,0,1}, [Listener]}}.
 
 %% == Internal functions ==

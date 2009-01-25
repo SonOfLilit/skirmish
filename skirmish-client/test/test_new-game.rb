@@ -22,6 +22,7 @@ class TestNewGame < Test::Unit::TestCase
     request_game :size => [100, 10000]
     request_game :size => [10000, 10000]
     request_game :corner => [1000000, 1000000], :size => [10000, 10000]
+    request_game :corner => [2 ** 32 - 100] * 2, :size => [100, 100]
   end
 
   def test_fatal
@@ -34,10 +35,10 @@ class TestNewGame < Test::Unit::TestCase
     end
   end
 
-  def response(x, y, w, h)
+  def response(x, y, w, h, uid, ux, uy)
     "world-corner #{x},#{y}\n" \
     "world-size #{w},#{h}\n" \
-     "\n"
+    "unit #{uid} #{ux},#{uy}\n\n"
   end
 
   def test_parse_errors
@@ -48,19 +49,28 @@ class TestNewGame < Test::Unit::TestCase
      # newlines
      "\n\n\n",
      # no numbers
-     response("", "", "", ""),
-     response("", 3000, 3000, 3000),
-     response(3000, "", 3000, 3000),
-     response(3000, 3000, "", 3000),
-     response(3000, 3000, 3000, ""),
+     response("", "", "", "", "", "", ""),
+     response("", 0, 3000, 3000, 0, 1500, 1500),
+     response(0, "", 3000, 3000, 0, 1500, 1500),
+     response(0, 0, "", 3000, 0, 1500, 1500),
+     response(0, 0, 3000, "", 0, 1500, 1500),
+     response(0, 0, 3000, 3000, "", 1500, 1500),
+     response(0, 0, 3000, 3000, 0, "", 1500),
+     response(0, 0, 3000, 3000, 0, 1500, ""),
      # negative numbers
-     response(-1, 0, 3000, 3000),
-     response(0, 0, -3000, 3000),
+     response(-1, 0, 3000, 3000, 0, 1500, 1500),
+     response(0, 0, -3000, 3000, 0, 1500, 1500),
+     response(0, 0, 3000, 3000, 0, -1, 1500),
      # missing last newline
-     response(-1, 0, 3000, 3000)[0..-2],
+     response(0, 0, 3000, 3000, 0, 1500, 1500)[0..-2],
      # number too big
-     response(2 ** 32, 0, 3000, 3000),
-     response(0, 0, 2 ** 32, 3000)
+     response(2 ** 32, 0, 3000, 3000, 0, 1500, 1500),
+     response(0, 0, 2 ** 32, 3000, 0, 1500, 1500),
+     response(0, 0, 3000, 3000, 2 ** 32, 1500, 1500),
+     response(0, 0, 3000, 3000, 0, 1500, 2 ** 32),
+     # sum too big
+     response(2 ** 32 - 1000, 0, 3000, 3000, 0, 2 ** 32 - 100, 1500),
+     response(0, 2 ** 32 - 1000, 3000, 3000, 0, 1500, 2 ** 32 - 100)
     ].each do |response|
       msg = "Invalid server response does not trigger NetworkProtocolError:\n" +
         response.inspect

@@ -50,12 +50,19 @@ module Skirmish
     #
     def request_game()
       send("game\n\n")
-      x, y, w, h = read_and_parse_message(:request_game_response)
+      x, y, w, h, uid, ux, uy = read_and_parse_message(:request_game_response)
       ul_corner = [x, y]
       size = [w, h]
-      lr_corner = (0..1).map{|i| ul_corner[i] + size[i] - 1}
+      size.each do |l|
+        raise NetworkProtocolError unless l >= 100
+      end
+      lr_corner = (0..1).map do |i|
+        c = ul_corner[i] + size[i] - 1
+        raise NetworkProtocolError unless c <= MAX_ULONG
+        c
+      end
       world_rect = ul_corner + lr_corner
-      return GameWorld.new(world_rect)
+      return GameWorld.new(world_rect, [[uid, ux, uy]])
     end
 
 
@@ -166,11 +173,12 @@ module Skirmish
     MESSAGES = {
       :ok => [/^ok\n\n$/, 0],
       :request_game_response =>
-      [/^world-corner (\d+),(\d+)\nworld-size (\d+),(\d+)\n\n$/, 4]
+      [/^world-corner (\d+),(\d+)\nworld-size (\d+),(\d+)\nunit (\d+) (\d+),(\d+)\n\n$/,
+       7]
     }
     # Biggest number fitting in one unsigned long integer (32 bits)
     # variable
-    MAX_ULONG = 2 ** 32
+    MAX_ULONG = 2 ** 32 - 1
     #
     # Reads one message from the server and tries to parse it as a
     # message of the given kind.
@@ -192,7 +200,7 @@ module Skirmish
           match.captures.length == MESSAGES[type][1]
         return match.captures.map do |s|
           i = s.to_i
-          raise NetworkProtocolError unless i < MAX_ULONG
+          raise NetworkProtocolError unless i <= MAX_ULONG
           i
         end
       else

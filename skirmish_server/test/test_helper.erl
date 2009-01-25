@@ -1,10 +1,5 @@
-%%%-------------------------------------------------------------------
-%%% File    : test_helper.hrl
-%%% Author  : Aur Saraf <aursaraf@Mac-2.local>
-%%% Description : Helper functions for Skirmish Server unit tests
-%%%
-%%% Created : 22 Jan 2009 by Aur Saraf <aursaraf@Mac-2.local>
-%%%-------------------------------------------------------------------
+%% @author Aur Saraf <sonoflilit@gmail.com>
+%% @doc Helper functions for Skirmish Server unit tests
 
 -module(test_helper).
 

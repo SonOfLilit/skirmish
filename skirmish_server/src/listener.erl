@@ -1,11 +1,11 @@
 %% @author Aur Saraf <sonoflilit@gmail.com>
 %%
 %% @doc Listens for new connections (by default on port 1657) and
-%% spawns a skirmish_server_client_handler to handle each.
+%% spawns a client_handler to handle each.
 %%
-%% @see skirmish_server_client_handler
+%% @see client_handler
 
--module(skirmish_server_listener).
+-module(listener).
 
 -behaviour(gen_server).
 
@@ -87,7 +87,7 @@ handle_cast(_Msg, State) ->
 %% @doc Handling all non call/cast messages
 handle_info({udp, Socket, IP, InPortNo, Packet},
 	    State=#state{socket=Socket, dimensions=Dimensions}) ->
-    skirmish_server_client_handler:start({IP, InPortNo}, Dimensions, Packet),
+    client_handler:start({IP, InPortNo}, Dimensions, Packet),
     {noreply, State};
 handle_info(_Msg, State) ->
     {noreply, State}.

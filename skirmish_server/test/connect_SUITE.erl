@@ -1,10 +1,6 @@
-%%%-------------------------------------------------------------------
-%%% File    : connect_SUITE.erl
-%%% Author  : Aur Saraf <aursaraf@Mac-2.local>
-%%% Description : Story 0: Connect
-%%%
-%%% Created : 14 Jan 2009 by Aur Saraf <aursaraf@Mac-2.local>
-%%%-------------------------------------------------------------------
+%% @author Aur Saraf <sonoflilit@gmail.com>
+%% @doc Story 0: Connect
+
 -module(connect_SUITE).
 
 -compile(export_all).
@@ -12,9 +8,7 @@
 -include("ct.hrl").
 -include("../include/skirmish_server.hrl").
 
-%%--------------------------------------------------------------------
-%% COMMON TEST CALLBACK FUNCTIONS
-%%--------------------------------------------------------------------
+%% == COMMON TEST CALLBACK FUNCTIONS ==
 
 suite() ->
     [{timetrap,{minutes,10}}].
@@ -56,13 +50,9 @@ all() ->
      test_wrong_protocol_version,
      test_protocol_error].
 
-%%--------------------------------------------------------------------
-%% TEST CASES
-%%--------------------------------------------------------------------
+%% == TEST CASES ==
 
-%%--------------------------------------------------------------------
-%% Invalid id/secret
-%%--------------------------------------------------------------------
+%% === Invalid id/secret ===
 
 test_too_short_id(_Config) ->
     fatal_contains("ab", "", "too short").
@@ -161,9 +151,7 @@ test_id_garbage(_Config) ->
 test_extra_newlines(_Config) ->
     protocol_error(test_helper:format_handshake("abc", "def\n")).
 
-%%--------------------------------------------------------------------
-%% Valid cases
-%%--------------------------------------------------------------------
+%% === Valid cases ===
 
 test_simplest_valid_case(_Config) ->
     success("abc", "").
@@ -177,9 +165,7 @@ test_longest_allowed_id_and_secret(_Config) ->
 test_most_contrived_valid_case(_Config) ->
     success("aA1.aA1.aA1.aA1.", lists:seq(1, 9) ++ lists:seq(11, 255)).
 
-%%--------------------------------------------------------------------
-%% Network issues
-%%--------------------------------------------------------------------
+%% === Network issues ===
 
 test_protocol_error(_Config) ->
     protocol_error("asdf").
@@ -194,9 +180,7 @@ wrong_protocol_version_with(FakeVersion) ->
     fatal_contains(Handshake, "version").
 
 
-%%--------------------------------------------------------------------
-%% INTERNAL
-%%--------------------------------------------------------------------
+%% == INTERNAL ==
 
 a(N) ->
     lists:duplicate(N, "a").

@@ -9,6 +9,8 @@ module Skirmish
     attr_reader :upper_left_corner
     # The bottom-right-most valid coordinate in this game instance
     attr_reader :lower_right_corner
+    # Units in the game (currently just one supported)
+    attr_reader :units
 
     #
     # Initializes a game instance
@@ -17,9 +19,13 @@ module Skirmish
     # point 1 is the top-left-most point in the game world and point 2
     # is the bottom-right-most
     #
-    def initialize world_rectangle
+    # +units+ is an array of arrays like +[uid, x, y]+ of unit
+    # descriptions
+    #
+    def initialize(world_rectangle, units)
       @upper_left_corner = world_rectangle[0..1]
       @lower_right_corner = world_rectangle[2..3]
+      @units = units
     end
 
   end

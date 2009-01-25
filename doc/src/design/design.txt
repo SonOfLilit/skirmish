@@ -125,7 +125,7 @@ Long int coordinates in the server and Short int in the client::
   'now'.
 **********************************************************************
 
-By default, game worlds are from (0,0) to (2999, 2999).
+By default, game worlds span from (0,0) to (2999, 2999).
 
 Terrain will be dealt with later, some way or another. Currently there
 is only one type of terrain - "ground" - and no need to communicate

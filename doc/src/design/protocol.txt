@@ -24,6 +24,11 @@ In general:
   may be up to 1KiB long and may contain any character.
 * Every message is contained in one UDP packet with a body of no more
   than 8192 bytes
+* msg_id is a long accumulated count of binary messages sent in one
+  direction of a "connection". e.g. The first and second position
+  updates the server sends will have msg_id 0 and 1, regardless of
+  whether the client sent the first command with msg_id 0 in the
+  meantime.
 
 Handshake
 ---------
@@ -78,5 +83,25 @@ Server responds
 ----------------------------------------------------------------------
 world-corner <long>,<long>\n
 world-size <long>,<long>\n
+unit <long id> <long>,<long>\n
 \n
+----------------------------------------------------------------------
+
+where 'world-size[0],world-size[1] >= 100',
+'world-corner + world-size - [1, 1]' is a vector of longs and
+'world-corner[i] <= unit[i] <= (world-corner + world-size)[i]'.
+
+Client responds
+
+----------------------------------------------------------------------
+ok\n
+\n
+----------------------------------------------------------------------
+
+And the game begins.
+
+Server sends binary message
+
+----------------------------------------------------------------------
+msg_id id x_position y_position
 ----------------------------------------------------------------------

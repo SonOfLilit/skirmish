@@ -9,3 +9,14 @@ Client requests game, server sends world parameters; Server configuration interf
 Assigned aursaraf
 Estimated 1h
 Real Again, a day and not yet done. Mostly due to refactoring of test support code. Will have to separate estimations.
+
+Story 2: One unit
+Server places single unit arbitrarily, game starts, server sends single position update, client displays map and unit
+Assigned aursaraf
+acceptance estimated 1h
+server tests estimated 0.5h
+server estimated 1h
+client tests estimated 0.5h
+client estimated 1h
+client graphics estimated 1h
+Started 16:15

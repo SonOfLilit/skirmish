@@ -3,7 +3,7 @@
 %% @private
 %% @doc Handles a connected client
 
--module(skirmish_server_client_handler).
+-module(client_handler).
 
 -behaviour(gen_fsm).
 
@@ -33,7 +33,7 @@
 %% Pid = pid()
 %% Error = {already_started,Pid} | term()
 %%
-%% @doc Start a skirmish_server_client_handler
+%% @doc Start a client_handler
 %%
 %% @see init/1
 start(Addr, Dimensions, Msg) ->
@@ -51,7 +51,7 @@ start(Addr, Dimensions, Msg) ->
 %% Dimensions = dimensions()
 %% Message = string()
 %%
-%% @doc Start a skirmish_server_client_handler.
+%% @doc Initialize a client_handler.
 %%
 %% `{IP, Port}' refers to remote address to communicate with.
 %%
@@ -75,13 +75,15 @@ init([{IP, Port}, Dim, Msg]) ->
 %% == State handler functions ==
 
 connected({message, "game\n\n"}, State) ->
-    Resp = lists:flatten(
-	     io_lib:format("world-corner ~w,~w\nworld-size ~w,~w\n\n",
-			   State#state.dimensions)),
-    gen_udp:send(State#state.socket, State#state.ip, State#state.port, Resp),
+    [X, Y, W, H] = State#state.dimensions,
+    Response =
+	lists:flatten(
+	  io_lib:format("world-corner ~w,~w\nworld-size ~w,~w\nunit 0 ~w,~w\n\n",
+			[X, Y, W, H, X + (W div 2), Y + (H div 2)])),
+    send(State, Response),
     {next_state, setup_game, State};
-connected({message, Req}, State) ->
-    error_logger:error_msg("Got illegal request from client: '~p'", [Req]),
+connected({message, Request}, State) ->
+    error_logger:error_msg("Got illegal request from client: '~p'", [Request]),
     send(State, fatal_parse_error()),
     {stop, protocol_error, State}.
 
